@@ -1,10 +1,12 @@
+import ArticleLayout from '@/app/components/layouts/ArticleLayout'
+
 export default function About(){
   return (
-    <article>
-      <p className="text-center font-bold article-title">ABOUT ME</p>
-      <div className="m-auto">
+    <ArticleLayout articleTitle='ABOUT ME'
+                   articleBackColor="orange">
+      <div >
         안녕하세요.
       </div>
-    </article>
+    </ArticleLayout>
   )
 }

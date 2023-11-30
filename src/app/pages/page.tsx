@@ -2,7 +2,7 @@ import About from "./about/about"
 
 export default function SectionPage(){
   return (
-    <section className="container p-2">
+    <section className="flex m-auto">
       <About />
     </section>
   )

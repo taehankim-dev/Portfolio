@@ -24,11 +24,11 @@ export default function Header(){
       <nav>
         <ul className="flex p-4">
           <li className={`mr-auto ${roboto.className} font-bold`}>
-            <span>TaeHan`s Portfolio</span>
+            <span className="text-lg">TaeHan`s Portfolio</span>
           </li>
-          {menuItems.map((item) => (
-            <li key={item.key} className="mr-6">
-              <span>{item.menuName}</span>
+          {menuItems.map((item, idx) => (
+            <li key={item.key} className={`${menuItems.length-1 === idx ? "" : "mr-6"}`}>
+              <span className="text-sm">{item.menuName}</span>
             </li>
           ))}
         </ul>
