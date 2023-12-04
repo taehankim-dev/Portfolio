@@ -17,7 +17,7 @@ const config: Config = {
   },
   safelist: [
     {
-      pattern: /bg-(red|orange|blue)-(200|300|400)/,
+      pattern: /bg-(pink|yellow|amber|purple|slate)-(200|300|400)/,
       variants: ['lg']
     }
   ],

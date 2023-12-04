@@ -16,8 +16,8 @@ export default function Header(){
   const menuItems : MenuT = [
     {key: 'menuItem01', menuName: 'About me'},
     {key: 'menuItem02', menuName: 'Skills'},
-    {key: 'menuItem03', menuName: 'Projects'},
-    {key: 'menuItem04', menuName: 'Career'},
+    {key: 'menuItem03', menuName: 'Career'},
+    {key: 'menuItem04', menuName: 'Projects'},
   ]
 
   return(
