@@ -1,4 +1,4 @@
-import ArticleLayout from '@/container/ArticleLayout'
+import ArticleLayout from '@/app/container/ArticleLayout'
 
 const AboutMe = [
   {key: 'name', title: '이름', body: '김태한'},

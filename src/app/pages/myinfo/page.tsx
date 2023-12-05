@@ -10,7 +10,7 @@ export default function MyInfo(){
       after:block 
       after:absolute
       after:top-0
-      after:bg-[url('/images/info_back2.jpg')]
+      after:bg-[url('/images/info_back.jpg')]
       after:xl:bg-cover
       after:bg-center
       after:w-full
