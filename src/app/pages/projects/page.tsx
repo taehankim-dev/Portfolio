@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
-import { getAllProjectData } from '@/app/lib/api';
-import ArticleLayout from '@/app/components/layouts/ArticleLayout';
+import { getAllProjectData } from '@/lib/api';
+import ArticleLayout from '@/container/ArticleLayout';
 
 export default function Project(){
   const projects = getAllProjectData();

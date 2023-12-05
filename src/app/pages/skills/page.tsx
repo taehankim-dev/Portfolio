@@ -1,4 +1,4 @@
-import ArticleLayout from "@/app/components/layouts/ArticleLayout";
+import ArticleLayout from "@/container/ArticleLayout";
 import { Noto_Sans } from 'next/font/google'
 
 const Skills = [
