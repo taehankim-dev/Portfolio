@@ -1,5 +1,5 @@
 import { readdirSync } from 'fs';
-import { getProjectDetailData } from '@/app/lib/api';
+import { getProjectDetailData } from '@/lib/api';
 
 type Params = {
   params :{

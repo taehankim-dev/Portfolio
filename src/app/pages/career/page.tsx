@@ -1,4 +1,4 @@
-import ArticleLayout from "@/app/components/layouts/ArticleLayout";
+import ArticleLayout from '@/container/ArticleLayout'
 
 export default function MyCareer(){
   return (
