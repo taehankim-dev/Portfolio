@@ -22,3 +22,8 @@
   font-weight: bold;
   font-family: 'Raleway', sans-serif;
 }
+
+.swiper-wrap{
+  /* 추후에 바꿔야함. */
+  width: 200%;
+}

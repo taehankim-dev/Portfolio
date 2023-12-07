@@ -1,4 +1,4 @@
-import { Roboto, Noto_Sans, Nanum_Myeongjo, Gowun_Dodum } from "next/font/google"
+import { Roboto, Noto_Sans, Nanum_Myeongjo, Gowun_Dodum, Inter } from "next/font/google"
 
 export const roboto = Roboto({
   weight: ['400', '700'],
@@ -22,4 +22,10 @@ export const gowunDodum = Gowun_Dodum({
   weight: ['400'],
   subsets: ['latin'],
   display: 'swap',
+})
+
+export const inter = Inter({
+  weight: ['400'],
+  subsets: ['latin'],
+  display: 'swap'
 })
