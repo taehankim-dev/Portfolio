@@ -56,9 +56,9 @@ export const Projects = [
       },
       {
         key: 'project02_line02', 
-        text: `React와 Recoil의 학습을 위해 React로 개발하였습니다. 
-              Firebase를 이용하여 회원관리와 회원들이 작성한 일정들을 관리할 수 있도록 개발하였습니다.
-              github-pages를 이용하여 github에 배포했고, Github Actions를 활용하여 Auto Deploy를 적용하였습니다.`
+        text: `React와 Recoil의 학습을 위해 개발하였습니다.
+              Recoil을 통한 상태관리를 알 수 있었습니다.
+              gh-pages와 Github Actions를 활용하여 Auto Deploy를 통한 배포를 경험할 수 있었습니다.`
       },
       {
         key: 'project02_readme',
