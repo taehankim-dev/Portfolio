@@ -8,6 +8,15 @@ type Params = {
   }
 }
 
+export async function getStaticProps({params}: {params:any}){
+  const postData = await getProjectDetailData(params.projectName);
+  return {
+    props: {
+      postData
+    }
+  }
+}
+
 export const generateStaticParams = async () => {
   const paths = readdirSync('./_projects')
 

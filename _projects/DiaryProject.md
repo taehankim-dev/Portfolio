@@ -1,5 +1,6 @@
 ---
-projectId : 1,
+slug: diary-project
+projectId : 1
 projectName : DiaryProject
 ---
 

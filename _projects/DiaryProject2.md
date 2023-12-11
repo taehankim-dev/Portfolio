@@ -1,6 +1,7 @@
 ---
-projectId : 1,
-projectName : DiaryProject
+slug: test
+projectId : 2
+projectName : test
 ---
 
 # Diary Servive For Web / 웹 다어이리 서비스

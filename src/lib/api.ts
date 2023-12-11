@@ -8,7 +8,10 @@ const projectsDir = join(process.cwd(), '_projects');
 export const getAllProjectData = () => {
   const projects = readdirSync(projectsDir).map((file) => {
     const project = readFileSync(`${projectsDir}/${file}`, 'utf-8');
-    return matter(project).data;
+    return {
+      data: matter(project).data,
+      content: matter(project).content
+    }
   })
 
   return projects;
