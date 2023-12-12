@@ -1,56 +1,27 @@
 import ArticleLayout from '@/app/container/ArticleLayout';
-// import { getAllProjectData } from '@/lib/api';
-import { getAllProjects } from '@/lib/api'
-import Project from './project/page';
-import Link from 'next/link';
-
-import ReactMarkDown from 'react-markdown'
-
-const customComponent = {
-  p({...props}){
-    return(
-      <p>{props.children}</p>
-    )
-  },
-  h1({...props}){
-    return(
-      <h1>{props.children}</h1>
-    )
-  },
-  h2({...props}){
-    return(
-      <h2>{props.children}</h2>
-    )
-  },
-  pre({...props}){
-    return(
-      <></>
-    )
-  }
-}
+import { getAllSimpleProjects } from '@/lib/api'
+import { ProjectItem } from './projectItem/page';
 
 export default function Projects(){
-  const allProjects = getAllProjects();
+  const allProjects = getAllSimpleProjects();
+console.log(allProjects)
+
   return (
     <ArticleLayout articleTitle="PROJECTS">
-      {allProjects.map(project => (
-        <div key={project.data.projectId}>
-          {/* <div dangerouslySetInnerHTML={{__html: project.content}} /> */}
-          <ReactMarkDown components={customComponent}>
-            {project.content}
-          </ReactMarkDown>
+      <div className='article-body'>
+        <div className="swiper-wrap overflow-hidden sm:h-[700px] md:h-[550px] relative">
+          <div className="swiper flex w-[200%] h-full absolute left-0 top-0">
+            {allProjects.map(project => (
+              <div key={project.data.projectId} 
+                  className="swiper-inner w-[50%]">
+                <div className='swiper-slide p-4'>
+                  <ProjectItem content={project.content}/>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
-      <Project />
-      {/* {projectData.map((project) => (
-        <div key={project.data.projectId}>
-          <Link href={`/pages/projects/DiaryProject`}>
-          {project.data.projectName}
-          </Link>
-          {project.content}
-          <span>123</span>
-        </div>
-      ))} */}
+      </div>
     </ArticleLayout>
   )
 } 

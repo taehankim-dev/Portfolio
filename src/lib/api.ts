@@ -1,41 +1,16 @@
 import { join } from "path";
 import { readdirSync, readFileSync } from "fs";
 import matter from "gray-matter";
-import markdownToHtml from "./markdownToHtml";
 
 const projectsDir = join(process.cwd(), '_projects');
+const simpleProjectDir = join(process.cwd(), '_projects/simple');
+const detailProjectDir = join(process.cwd(), '_projects/detail');
 
-// export const getAllProjectData = () => {
-//   const projects = readdirSync(projectsDir).map((file) => {
-//     const project = readFileSync(`${projectsDir}/${file}`, 'utf-8');
-//     return {
-//       data: matter(project).data,
-//       content: matter(project).content
-//     }
-//   })
-
-//   return projects;
-// }
-
-// export const getProjectDetailData = async(
-//   slug: string,
-//   projectName: string,
-//   fields: string[] = []
-// ) => {
-//   const project = readFileSync(`_projects/${projectName}.md`, 'utf-8');
-//   const { data, content } = matter(project);
-
-  // return { 
-  //   meta: data,
-  //   content: await markdownToHtml(content)
-  // }
-// }
-
-export const getAllProjects = (
+export const getAllSimpleProjects = (
   fields: string[] = []
 ) => {
-  const projects = readdirSync(projectsDir).map((file) => {
-    const project = readFileSync(`${projectsDir}/${file}`, 'utf-8');
+  const projects = readdirSync(simpleProjectDir).map((file) => {
+    const project = readFileSync(`${simpleProjectDir}/${file}`, 'utf-8');
     return {
       data: matter(project).data,
       content: matter(project).content
@@ -45,7 +20,7 @@ export const getAllProjects = (
   return projects;
 }
 
-export const getProjectBySlug = (
+export const getSimpleProjectBySlug = (
   slug: string,
   projectName: string,
   fields: string[] = []
