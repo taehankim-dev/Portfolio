@@ -25,8 +25,6 @@ export const getSimpleProjectBySlug = (
   projectName: string,
   fields: string[] = []
 ) => {
-
-  console.log(projectName, "prjName")
   const projectMdFile = readFileSync(`_projects/${projectName}.md`, 'utf-8');
   const { data, content } = matter(projectMdFile);
 

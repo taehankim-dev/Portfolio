@@ -5,7 +5,7 @@ projectName : DiaryProject
 date: 23.09
 ---
 
-# 웹 다어이리 프로젝트
+# Diary Project / 웹 다어이리 프로젝트
 
 ## 2023.09 ~ 2023.10 (1인 개인 프로젝트)
 
@@ -29,6 +29,3 @@ date: 23.09
 
 >### 배포 주소
 >https://taehankim-dev.github.io/DiaryWebService/
-
->### 블로그 주소
->https://daily-dev-note95.tistory.com/89

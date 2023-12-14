@@ -1,6 +1,7 @@
 import ReactMarkDown from 'react-markdown'
 import { gowunDodum } from '@/components/font'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
 type Props = {
   content: string
@@ -9,12 +10,12 @@ type Props = {
 const customComponent = {
   p({...props}){
     return(
-      <p className="my-4">{props.children}</p>
+      <p className="my-2">{props.children}</p>
     )
   },
   h1({...props}){
     return(
-      <h1 className={`text-center my-4 mb-6 font-bold text-2xl`}>{props.children}</h1>
+      <h1 className={`text-center font-bold text-2xl mb-4`}>{props.children}</h1>
     )
   },
   h2({...props}){
@@ -44,7 +45,7 @@ const customComponent = {
   },
   blockquote({...props}){
     return(
-      <div className="flex items-center my-2 text-sm">
+      <div className="flex items-center my-1 text-sm">
         {props.children}
       </div>
     )
@@ -67,15 +68,22 @@ const customComponent = {
 export const ProjectItem = ({
   content
 }: Props) => {
+  const [contentImg, setContentImg] = useState("DiaryProject")
+
+  useEffect(() => {
+    if(content.includes("Diary Project")) setContentImg("DiaryProject");
+    else if(content.includes("Portfolio")) setContentImg("Portfolio")
+  }, [content])
+
   return (
     <div className="swiper-slide-item mx-auto border-2 w-11/12 sm:w-10/11 p-4 flex">
-      <div className='swiper-slide-item-img-wrap w-1/3'>
-        <Image src={"/images/calendar_sample1.jpg"}
+      <div className='swiper-slide-item-img-wrap w-1/3 items-center inline-flex'>
+        <Image src={`/images/${contentImg}.jpg`}
                alt='포트폴리오 이미지'
-               width={1200}
-               height={100}/>
+               width={500}
+               height={500}/>
       </div>
-      <div className={`swiper-slide-item-body-wrap w-2/3 px-4 ${gowunDodum.className}`}>
+      <div className={`swiper-slide-item-body-wrap inline-grid items-center content-between w-2/3 px-4 ${gowunDodum.className}`}>
         <ReactMarkDown components={customComponent}>
           {content}
         </ReactMarkDown>
