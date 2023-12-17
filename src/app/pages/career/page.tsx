@@ -8,6 +8,7 @@ import { Careers } from '@/constants/careers'
 export default function MyCareer(){
   return (
     <ArticleLayout articleTitle="CAREER"
+                   articleId="career"
                    articleBackColor="slate-300">
       <div className="article-body">
         <div className="article-body-inner flex px-6 mt-10">

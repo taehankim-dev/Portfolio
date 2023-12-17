@@ -1,4 +1,3 @@
-import Header from '@/app/components/header'
 
 export default function MyInfo(){
   return (
@@ -17,8 +16,7 @@ export default function MyInfo(){
       after:h-[650px]
       after:opacity-20
       `}>
-      <Header />
-      <div className="md:container m-auto w-full p-4 relative z-10">
+      <div className="md:container m-auto w-full p-4 relative z-10 top-20">
         <div className="article-title text-center font-bold border-b-2 p-2 mb-4">
           <p className="h-[90px] text-5xl mb-4">- 김태한 -</p>
           <p className="h-[70px] tracking-widest text-5xl ">PORTFOLIO</p>

@@ -1,5 +1,5 @@
 import ArticleLayout from "@/app/container/ArticleLayout";
-import { Noto_Sans } from 'next/font/google'
+import { notoSans } from "@/components/font";
 
 const Skills = [
   {key: 'Lang', title: 'Language', body: ['JavaScript', 'TypeScript']},
@@ -9,22 +9,18 @@ const Skills = [
   {key: 'Cert', title: 'Certificate', body: ['정보처리기사']}
 ]
 
-const NotoSans = Noto_Sans({
-  weight: ['400', '900'],
-  subsets: ['latin']
-})
-
 export default function MySkills() {
   return (
     <ArticleLayout articleTitle='SKILLS'
+                   articleId="skills"
                    articleBackColor="amber-400">
       <div className="article-body">
         {Skills.map(skill => (
           <ul key={skill.key} className="flex mx-auto my-2 justify-center items-center">
-            <li className={`inline-flex w-[200px] font-bold ${NotoSans.className}`}>
+            <li className={`inline-flex w-[200px] font-bold ${notoSans.className}`}>
               {skill.title}
             </li>
-            <li className={`inline-flex xl:w-[600px] w-3/4 ${NotoSans.className}`}>
+            <li className={`inline-flex xl:w-[600px] w-3/4 ${notoSans.className}`}>
               {skill.body.map(item => (
                 <span key={item} className="p-2 flex">{item}</span>
               ))}

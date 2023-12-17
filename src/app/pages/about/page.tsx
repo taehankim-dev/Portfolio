@@ -12,6 +12,7 @@ const AboutMe = [
 export default function About(){
   return (
     <ArticleLayout articleTitle='ABOUT ME'
+                   articleId='about'
                    articleBackColor="pink-200">
       <div className="article-body">
         {AboutMe.map(info => (
