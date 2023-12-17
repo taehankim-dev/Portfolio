@@ -1,6 +1,7 @@
 import ReactMarkDown from 'react-markdown'
 import { gowunDodum } from '@/components/font'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 type Props = {
@@ -55,6 +56,13 @@ const customComponent = {
       <li className='flex px-1 break-words'>
         {props.children}
       </li>
+    )
+  },
+  a({...props}){
+    return(
+      <Link href={props.children} target='blank' className={`hover:text-blue-700 hover:font-bold`}>
+        {props.children}
+      </Link>
     )
   },
   pre(){
