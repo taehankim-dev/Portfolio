@@ -2,7 +2,7 @@
 slug: portfolio-project
 projectId : 2
 projectName : PortfolioProject
-date: 23.12
+date: 2023-12-01
 ---
 
 # Portfolio / 포트폴리오
@@ -28,3 +28,6 @@ Next.js의 학습을 위해 Next.js로 개발하였습니다. 개발 과정을 �
 
 >### 배포 주소
 >
+
+>### Github 주소
+>https://github.com/taehankim-dev/Portfolio

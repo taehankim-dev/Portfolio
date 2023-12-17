@@ -9,41 +9,19 @@ const detailProjectDir = join(process.cwd(), '_projects/detail');
 export const getAllSimpleProjects = (
   fields: string[] = []
 ) => {
-  const projects = readdirSync(simpleProjectDir).map((file) => {
-    const project = readFileSync(`${simpleProjectDir}/${file}`, 'utf-8');
-    return {
-      data: matter(project).data,
-      content: matter(project).content
-    }
-  })
-  
+  const slugs = readdirSync(simpleProjectDir);
+  const projects = slugs.map((slug) => getSimpleProjectBySlug(slug, fields))
+                        .sort((post1, post2) => (post1.data.date > post2.data.date ? -1 : 1))
+
   return projects;
 }
 
 export const getSimpleProjectBySlug = (
   slug: string,
-  projectName: string,
-  fields: string[] = []
+  fields: string[] = [],
 ) => {
-  const projectMdFile = readFileSync(`_projects/${projectName}.md`, 'utf-8');
+  const projectMdFile = readFileSync(`${simpleProjectDir}/${slug}`, 'utf-8');
   const { data, content } = matter(projectMdFile);
 
-  type Items = {
-    [key: string]: string
-  }
-
-  const items: Items = {};
-  fields.forEach((field) => {
-    if (field === 'slug') {
-      items[field] = slug.split(".md")[0];
-    }
-    if (field === 'content') {
-      items[field] = content;
-    }
-    if (typeof data[field] !== 'undefined') {
-      items[field] = data[field];
-    }
-  });
-
-  return items;
+  return {data, content};
 }

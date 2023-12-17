@@ -15,7 +15,6 @@ type Props = {
 export default function Swiper({
   allProjects
 }: Props){
-  const [slideCount, setSlideCount] = useState(allProjects.length)
   const [curSlide, setCurSlide] = useState(0)
   
   useEffect(() => {
@@ -57,7 +56,7 @@ export default function Swiper({
         ))}
       </div>
       {
-        curSlide === slideCount - 1 ?
+        curSlide === allProjects.length - 1 ?
         <></>
         :
         <span className="absolute top-[50%] right-0 z-10 -translate-y-1/2 cursor-pointer

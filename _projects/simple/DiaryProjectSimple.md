@@ -2,7 +2,7 @@
 slug: diary-project
 projectId : 1
 projectName : DiaryProject
-date: 23.09
+date: 2023-09-30
 ---
 
 # Diary Project / 웹 다어이리 프로젝트
@@ -29,3 +29,6 @@ date: 23.09
 
 >### 배포 주소
 >https://taehankim-dev.github.io/DiaryWebService/
+
+>### Github 주소
+>https://github.com/taehankim-dev/DiaryWebService
