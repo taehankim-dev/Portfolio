@@ -1,7 +1,7 @@
 "use client"
 import { useCallback, useEffect, useMemo } from "react";
 import { throttle } from "lodash"
-import { roboto } from "@/components/font";
+import { oswald, roboto } from "@/components/font";
 
 type MenuT = {
   key: string,
@@ -57,7 +57,7 @@ export default function Header(){
           </li>
           {menuItems.map((item, idx) => (
             <li key={item.key} 
-                className={`${menuItems.length-1 === idx ? "" : "mr-6"}`}>
+                className={`${oswald.className} ${menuItems.length-1 === idx ? "" : "mr-6"}`}>
               <span className="text-sm cursor-pointer hover:text-blue-400" onClick={() => onClickMenu(item.menuId)}>{item.menuName}</span>
             </li>
           ))}
