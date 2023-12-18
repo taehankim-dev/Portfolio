@@ -11,8 +11,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily:{
-        roboto: ["var(--roboto)"],
-        raleway: ["var(--raleway)"]
+        
       }
     }
   },

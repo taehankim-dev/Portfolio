@@ -1,4 +1,4 @@
-import { Roboto, Noto_Sans, Nanum_Myeongjo, Gowun_Dodum, Inter, Oswald } from "next/font/google"
+import { Roboto, Noto_Sans, Nanum_Myeongjo, Gowun_Dodum, Inter, Oswald, Raleway } from "next/font/google"
 
 export const roboto = Roboto({
   weight: ['400', '700'],
@@ -34,4 +34,10 @@ export const oswald = Oswald({
   weight: ['400', '700'],
   subsets: ['latin'],
   display: 'swap'
+})
+
+export const raleway = Raleway({
+  weight: ['400', '900'],
+  subsets: ['latin'],
+  display: 'swap',
 })

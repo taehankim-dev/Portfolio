@@ -1,3 +1,4 @@
+import { raleway } from "@/components/font"
 
 export default function MyInfo(){
   return (
@@ -19,7 +20,7 @@ export default function MyInfo(){
       <div className="md:container m-auto w-full p-4 relative z-10 top-20">
         <div className="article-title text-center font-bold border-b-2 p-2 mb-4">
           <p className="h-[90px] text-5xl mb-4">- 김태한 -</p>
-          <p className="h-[70px] tracking-widest text-5xl ">PORTFOLIO</p>
+          <p className={`h-[70px] tracking-widest text-5xl ${raleway.className}`}>PORTFOLIO</p>
         </div>
         <div className="article-body flex h-[250px] justify-center items-center">
           <ul className="text-center">
