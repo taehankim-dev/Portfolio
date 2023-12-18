@@ -13,7 +13,7 @@ export default function MyCareer(){
       <div className="article-body">
         <div className="article-body-inner flex px-6 mt-10">
           <div className="career-img flex xl:w-[350px] xl:h-[270px] md:w-[300px] md:h-[230px] sm:w-[300px] sm:h-[200px] w-[200px] h-[150px] border-4 rounded-full overflow-hidden bg-white">
-            <Image src="/images/daedan_logo.jpg" 
+            <Image src="/images/logos/daedan_logo.jpg" 
                   alt="대단 로고"
                   width={250}
                   height={200}

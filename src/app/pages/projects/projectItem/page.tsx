@@ -86,7 +86,8 @@ export const ProjectItem = ({
   return (
     <div className="swiper-slide-item mx-auto border-2 w-11/12 sm:w-10/11 p-4 flex">
       <div className='swiper-slide-item-img-wrap w-1/3 items-center inline-flex'>
-        <Image src={`/images/projects/${contentImg}.jpg`}
+        <Image className="swiper-img"
+               src={`/images/projects/${contentImg}.jpg`}
                alt='포트폴리오 이미지'
                width={500}
                height={500}/>
