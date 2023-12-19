@@ -27,7 +27,7 @@ Next.js의 학습을 위해 Next.js로 개발하였습니다. 개발 과정을 �
 >Vercel
 
 >### 배포 주소
->
+>[https://kth-portfolio.vercel.app/](https://kth-portfolio.vercel.app/)
 
 >### Github 주소
 >[https://github.com/taehankim-dev/Portfolio](https://github.com/taehankim-dev/Portfolio)
