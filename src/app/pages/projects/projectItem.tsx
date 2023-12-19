@@ -1,12 +1,10 @@
-'use client'
-
 import ReactMarkDown from 'react-markdown'
 import { gowunDodum } from '@/components/font'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 
 type Props = {
+  imgSrc: string,
   content: string
 }
 
@@ -75,21 +73,15 @@ const customComponent = {
 }
 
 
-export const ProjectItem = ({
+export default function ProjectItem({
+  imgSrc,
   content
-}: Props) => {
-  const [contentImg, setContentImg] = useState("DiaryProject")
-
-  useEffect(() => {
-    if(content.includes("Diary Project")) setContentImg("DiaryProject");
-    else if(content.includes("Portfolio")) setContentImg("Portfolio")
-  }, [content])
-
+}: Props){
   return (
     <div className="swiper-slide-item mx-auto border-2 w-11/12 sm:w-10/11 p-4 flex">
       <div className='swiper-slide-item-img-wrap w-1/3 items-center inline-flex'>
         <Image className="swiper-img"
-               src={`/images/projects/${contentImg}.jpg`}
+               src={`/images/projects/${imgSrc}.jpg`}
                alt='포트폴리오 이미지'
                width={500}
                height={500}/>

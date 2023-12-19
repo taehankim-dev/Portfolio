@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from "react";
-import { ProjectItem } from "./projectItem/page"
+import ProjectItem from "./projectItem"
 
 type Props = {
   allProjects: {
@@ -42,7 +42,6 @@ export default function Swiper({
         <span className="absolute top-[50%] z-10 -translate-y-1/2 cursor-pointer
                          before:content-['\290E'] before:font-bold before:text-4xl before:transition-all
                          hover:before:text-blue-500"
-                         
               onClick={() => moveSlide("left")} />
       }
       <div className={`swiper flex w-[200%] h-full absolute left-0 top-0 items-center transition-all`}>
@@ -50,7 +49,7 @@ export default function Swiper({
           <div key={project.data.projectId} 
               className="swiper-inner w-[50%]">
             <div className='swiper-slide'>
-              <ProjectItem content={project.content}/>
+              <ProjectItem imgSrc={project.data.projectName} content={project.content}/>
             </div>
           </div>
         ))}
