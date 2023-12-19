@@ -1,3 +1,5 @@
+'use client'
+
 import ReactMarkDown from 'react-markdown'
 import { gowunDodum } from '@/components/font'
 import Image from 'next/image'
