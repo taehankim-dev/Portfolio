@@ -1,0 +1,237 @@
+---
+title: "CJ 올리브네트웍스 모니터링 시스템 개선"
+company: "CJ 올리브네트웍스"
+period: "2020.11 - 2021.03"
+role:
+  - "프론트엔드 개발"
+stack:
+  - "Vue.js"
+  - "JSP"
+  - "JavaScript"
+summary: "JSP 기반 레거시 모니터링 시스템을 Vue.js로 전환하여 유지보수성 및 성능 개선"
+problem: "레거시 JSP 시스템의 유지보수 어려움, API 호출 과다로 인한 성능 저하"
+result:
+  - "API 호출 최적화(throttle 적용)로 페이지 로딩 성능 개선"
+  - "Vue.js 전환으로 유지보수성 향상"
+  - "데이터 시각화 개선 및 DB 쿼리 정합성 문제 해결"
+featured: false
+---
+
+## 문제 상황 & 해결 경험
+
+**문제**: JSP 기반 레거시 모니터링 시스템의 유지보수 어려움과 과도한 API 호출로 인한 성능 저하
+
+**역할**: 프론트엔드 개발 / 레거시 시스템 Vue.js 전환
+
+**결과**:
+- Throttle 적용으로 API 호출 최적화 및 성능 개선
+- Vue.js 컴포넌트 기반 구조로 유지보수성 향상
+- 데이터 시각화 및 DB 쿼리 정합성 문제 해결
+
+---
+
+## 배경
+
+CJ 올리브네트웍스의 내부 **모니터링 시스템**은 JSP 기반으로 구축되어 있었습니다.
+
+문제점:
+- **레거시 기술 스택**: JSP + jQuery 기반으로 코드 유지보수 어려움
+- **성능 이슈**: 실시간 데이터 갱신을 위해 짧은 간격으로 API를 호출하면서 서버 부하 증가
+- **데이터 정합성**: DB 쿼리 결과와 화면 표시 데이터 불일치
+
+---
+
+## 문제 상황 & 해결
+
+### 1. API 호출 과다
+
+**현상**: 모니터링 대시보드에서 1-2초마다 API를 호출하면서 서버 부하 증가
+
+**원인**:
+```javascript
+// Before: 레거시 jQuery 기반
+setInterval(() => {
+  $.ajax({
+    url: '/api/monitoring/status',
+    success: (data) => {
+      updateUI(data);
+    }
+  });
+}, 1000);  // 1초마다 호출
+```
+
+**해결 - Throttle 적용**:
+```typescript
+// After: Vue.js + throttle
+import { throttle } from 'lodash-es';
+
+const fetchMonitoringData = throttle(async () => {
+  try {
+    const response = await fetch('/api/monitoring/status');
+    const data = await response.json();
+    monitoringData.value = data;
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+  }
+}, 5000);  // 5초로 간격 증가
+
+onMounted(() => {
+  fetchMonitoringData();
+  setInterval(fetchMonitoringData, 5000);
+});
+```
+
+**결과**:
+- API 호출 빈도 감소 (1초 → 5초)
+- 서버 부하 약 80% 감소
+- 페이지 로딩 성능 개선
+
+### 2. 레거시 코드 개선 - Vue.js 전환
+
+**Before (JSP + jQuery)**:
+```jsp
+<!-- legacy.jsp -->
+<div id="monitoring-panel">
+  <%
+    List<MonitoringData> dataList = ...;
+    for (MonitoringData data : dataList) {
+  %>
+    <div class="status-item">
+      <span><%= data.getName() %></span>
+      <span class="status <%= data.getStatus() %>">
+        <%= data.getStatus() %>
+      </span>
+    </div>
+  <% } %>
+</div>
+
+<script>
+  $(document).ready(function() {
+    // jQuery spaghetti code...
+  });
+</script>
+```
+
+**After (Vue.js)**:
+```vue
+<template>
+  <div class="monitoring-panel">
+    <StatusCard 
+      v-for="item in monitoringData" 
+      :key="item.id"
+      :data="item"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import StatusCard from '@/components/StatusCard.vue';
+
+interface MonitoringData {
+  id: number;
+  name: string;
+  status: 'normal' | 'warning' | 'error';
+}
+
+const monitoringData = ref<MonitoringData[]>([]);
+
+onMounted(async () => {
+  await fetchMonitoringData();
+});
+</script>
+```
+
+### 3. 데이터 시각화 개선
+
+**문제**: 텍스트 중심의 모니터링 화면으로 상태 파악 어려움
+
+**해결**:
+- Chart.js를 활용한 시계열 데이터 시각화
+- 색상 코딩으로 상태 직관적 표시
+- 실시간 차트 업데이트
+
+```vue
+<template>
+  <div class="chart-container">
+    <canvas ref="chartCanvas"></canvas>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { Chart, registerables } from 'chart.js';
+
+Chart.register(...registerables);
+
+const chartCanvas = ref<HTMLCanvasElement>();
+let chart: Chart;
+
+onMounted(() => {
+  const ctx = chartCanvas.value?.getContext('2d');
+  if (ctx) {
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'CPU Usage',
+          data: [],
+          borderColor: 'rgb(75, 192, 192)',
+        }]
+      }
+    });
+  }
+});
+</script>
+```
+
+### 4. DB 쿼리 정합성 문제
+
+**현상**: DB 쿼리 결과와 화면에 표시되는 데이터가 불일치
+
+**원인**: 
+- 여러 테이블 JOIN 시 중복 데이터 발생
+- 집계 함수 사용 시 GROUP BY 누락
+
+**해결**:
+```sql
+-- Before: 중복 데이터 발생
+SELECT m.*, s.status_name
+FROM monitoring m
+LEFT JOIN status s ON m.status_id = s.id;
+
+-- After: DISTINCT 및 GROUP BY 추가
+SELECT DISTINCT m.id, m.name, s.status_name, COUNT(*) as cnt
+FROM monitoring m
+LEFT JOIN status s ON m.status_id = s.id
+GROUP BY m.id, m.name, s.status_name;
+```
+
+---
+
+## 결과
+
+### 정량적 성과
+- API 호출 빈도: 1초 → 5초 (80% 감소)
+- 페이지 로딩 속도: 약 30% 개선
+- 코드 라인 수: JSP 대비 40% 감소 (컴포넌트화)
+
+### 정성적 성과
+- Vue.js 기반 모던 프론트엔드로 전환
+- 유지보수성 향상
+- 데이터 시각화로 모니터링 효율 개선
+
+---
+
+## 회고
+
+### 잘한 점
+- **레거시 시스템 개선 경험**: JSP → Vue.js 전환을 통한 모던 프론트엔드 적용
+- **성능 최적화**: Throttle 적용으로 실질적인 성능 개선 달성
+- **데이터 정합성 확보**: DB 쿼리 개선으로 정확한 데이터 표시
+
+### 배운 점
+- 레거시 시스템을 점진적으로 개선하는 방법
+- API 호출 최적화 기법 (Throttle, Debounce)
+- 데이터 시각화의 중요성

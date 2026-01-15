@@ -1,0 +1,245 @@
+---
+title: "웹 MES 시스템 프론트엔드 개발"
+company: "CJ 올리브네트웍스"
+period: "2021.03 - 2021.09"
+role:
+  - "프론트엔드 개발"
+  - "UI 퍼블리싱"
+stack:
+  - "Vue.js"
+  - "Vuetify"
+  - "JavaScript"
+summary: "Vue.js와 Vuetify 기반 MES 시스템 UI 퍼블리싱 및 데이터 시각화 기능 구현"
+problem: "컴포넌트 재사용성 부족 및 유지보수 어려움"
+result:
+  - "Atomic Design 기반 컴포넌트 구조 개선"
+  - "재사용 가능한 UI 컴포넌트 라이브러리 구축"
+  - "데이터 시각화 기능 구현"
+featured: false
+---
+
+## 문제 상황 & 해결 경험
+
+**문제**: MES 시스템 개발 과정에서 컴포넌트 재사용성 부족 및 유지보수 어려움
+
+**역할**: 프론트엔드 UI 퍼블리싱 / 데이터 시각화 구현
+
+**결과**:
+- Atomic Design 참고하여 컴포넌트 구조 개선
+- 재사용 가능한 UI 컴포넌트 구축
+- Vuetify 기반 일관된 디자인 시스템
+
+---
+
+## 배경
+
+웹 기반 **MES(Manufacturing Execution System)** 프론트엔드 개발 프로젝트에 참여했습니다.
+
+주요 업무:
+- **UI 퍼블리싱**: Vuetify를 활용한 UI 구현
+- **데이터 시각화**: 생산 현황 및 통계 차트 구현
+- **컴포넌트 설계**: 재사용 가능한 컴포넌트 구조 개선
+
+---
+
+## 기술적 판단 & 설계 포인트
+
+### 1. Atomic Design 참고
+
+컴포넌트 재사용성과 유지보수성을 높이기 위해 **Atomic Design** 개념을 참고하여 컴포넌트를 계층적으로 구조화했습니다.
+
+```
+src/components/
+├── atoms/           # 가장 작은 단위
+│   ├── Button.vue
+│   ├── Input.vue
+│   └── Badge.vue
+├── molecules/       # Atom의 조합
+│   ├── SearchBar.vue
+│   ├── FormField.vue
+│   └── StatusCard.vue
+├── organisms/       # Molecule의 조합
+│   ├── DataTable.vue
+│   ├── ProductionChart.vue
+│   └── Header.vue
+└── templates/       # 페이지 레이아웃
+    ├── DashboardLayout.vue
+    └── FormLayout.vue
+```
+
+### 2. 재사용 가능한 컴포넌트 예시
+
+#### Atom - Button 컴포넌트
+```vue
+<template>
+  <v-btn 
+    :color="color"
+    :size="size"
+    :variant="variant"
+    @click="handleClick"
+  >
+    <slot />
+  </v-btn>
+</template>
+
+<script setup lang="ts">
+interface Props {
+  color?: string;
+  size?: 'small' | 'default' | 'large';
+  variant?: 'flat' | 'outlined' | 'text';
+}
+
+withDefaults(defineProps<Props>(), {
+  color: 'primary',
+  size: 'default',
+  variant: 'flat',
+});
+
+const emit = defineEmits<{
+  click: [];
+}>();
+
+const handleClick = () => {
+  emit('click');
+};
+</script>
+```
+
+#### Molecule - SearchBar 컴포넌트
+```vue
+<template>
+  <div class="search-bar">
+    <v-text-field
+      v-model="searchQuery"
+      placeholder="검색..."
+      prepend-inner-icon="mdi-magnify"
+      variant="outlined"
+      density="compact"
+      @keyup.enter="handleSearch"
+    />
+    <v-btn 
+      color="primary"
+      @click="handleSearch"
+    >
+      검색
+    </v-btn>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+
+const searchQuery = ref('');
+
+const emit = defineEmits<{
+  search: [query: string];
+}>();
+
+const handleSearch = () => {
+  emit('search', searchQuery.value);
+};
+</script>
+```
+
+#### Organism - DataTable 컴포넌트
+```vue
+<template>
+  <v-data-table
+    :headers="headers"
+    :items="items"
+    :loading="loading"
+    :items-per-page="10"
+  >
+    <template #top>
+      <SearchBar @search="handleSearch" />
+    </template>
+    
+    <template #item.actions="{ item }">
+      <v-btn size="small" @click="editItem(item)">수정</v-btn>
+      <v-btn size="small" color="error" @click="deleteItem(item)">삭제</v-btn>
+    </template>
+  </v-data-table>
+</template>
+
+<script setup lang="ts">
+import SearchBar from '@/components/molecules/SearchBar.vue';
+
+interface Props {
+  headers: any[];
+  items: any[];
+  loading?: boolean;
+}
+
+withDefaults(defineProps<Props>(), {
+  loading: false,
+});
+</script>
+```
+
+### 3. 데이터 시각화
+
+생산 현황을 시각적으로 표현하기 위해 Chart.js를 활용했습니다.
+
+```vue
+<template>
+  <v-card>
+    <v-card-title>생산 현황</v-card-title>
+    <v-card-text>
+      <canvas ref="chartCanvas"></canvas>
+    </v-card-text>
+  </v-card>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { Chart, registerables } from 'chart.js';
+
+Chart.register(...registerables);
+
+const chartCanvas = ref<HTMLCanvasElement>();
+
+onMounted(() => {
+  const ctx = chartCanvas.value?.getContext('2d');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['1월', '2월', '3월', '4월', '5월'],
+        datasets: [{
+          label: '생산량',
+          data: [120, 150, 180, 170, 200],
+          backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        }]
+      }
+    });
+  }
+});
+</script>
+```
+
+---
+
+## 결과
+
+### 정량적 성과
+- 재사용 가능한 컴포넌트: 약 30개 구축
+- 코드 중복 감소: 약 40%
+
+### 정성적 성과
+- Atomic Design 기반 컴포넌트 구조로 유지보수성 향상
+- Vuetify를 활용한 일관된 디자인 시스템
+- 데이터 시각화로 생산 현황 직관적 파악 가능
+
+---
+
+## 회고
+
+### 잘한 점
+- **체계적인 컴포넌트 설계**: Atomic Design 개념을 실무에 적용
+- **재사용성 확보**: 다양한 페이지에서 컴포넌트 재사용
+- **협업**: 팀원들과 컴포넌트 사용 가이드 공유
+
+### 배운 점
+- Vuetify UI 프레임워크 활용 경험
+- 컴포넌트 기반 설계의 중요성
+- 데이터 시각화 라이브러리 활용

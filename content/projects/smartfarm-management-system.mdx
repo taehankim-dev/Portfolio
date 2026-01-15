@@ -1,0 +1,249 @@
+---
+title: "스마트팜 IoT 관리 시스템"
+company: "대단"
+period: "2025.09 - 2026.01"
+role:
+  - "풀스택 개발"
+  - "아키텍처 설계"
+  - "배포 환경 구성"
+stack:
+  - "Next.js"
+  - "TypeScript"
+  - "Spring Boot"
+  - "PostgreSQL"
+  - "MQTT"
+  - "Docker"
+  - "Nginx"
+summary: "MQTT 기반 센서 데이터를 실시간 수집하여 농가 환경을 모니터링하고 원격 제어하는 IoT 플랫폼"
+problem: "레거시 시스템의 동기 처리 방식으로 인한 웹 제어 API 응답 지연 및 알림 중복 발송 문제"
+result:
+  - "MQTT 데이터 수집 전용 백엔드 분리로 웹 제어 API 응답 속도 개선"
+  - "알림 발송 상태 DB 저장으로 문자 비용 절감 및 안정성 확보"
+  - "실시간 데이터 정상 표시로 사용자 경험 개선"
+thumbnail: "/images/projects/smartfarm-thumbnail.png"
+featured: true
+---
+
+## 문제 상황 & 해결 경험
+
+**문제**: 기존 시스템의 동기 처리 방식으로 인해 MQTT 데이터 수집 시 웹 제어 API 응답 지연 발생, 백엔드 재배포 시 알림 중복 발송 문제
+
+**역할**: 풀스택 개발 / MQTT 아키텍처 설계 및 구현 / Docker 기반 배포 환경 구성
+
+**결과**:
+- MQTT 데이터 수집 전용 백엔드 분리로 웹 제어 API 응답 속도 개선
+- 알림 상태 DB 저장으로 중복 발송 방지 및 비용 절감
+- 실시간 데이터 표시 정상화
+
+---
+
+## 배경
+
+기존 회사에서 스마트 공장 및 스마트 팩토리를 관리하던 사이트와는 별도로, 스마트팜만을 전문적으로 관리하는 시스템의 필요성이 대두되었습니다.
+
+특히 다음과 같은 요구사항이 있었습니다:
+- **사용자 친화적인 UI**: 기존 시스템은 PC 중심으로 설계되어 모바일 환경에서 사용하기 어려움
+- **실시간 모니터링**: 농장 환경 센서 데이터를 실시간으로 확인하고 제어할 수 있어야 함
+- **안정적인 알림**: 센서 이상 상황 발생 시 즉시 알림을 받아야 함
+
+---
+
+## 문제 상황
+
+### 1. 웹 제어 API 응답 지연
+
+**현상**: MQTT 데이터 수집이 진행되는 동안 웹 제어 API 요청이 지연되는 문제
+
+**원인**:
+- MQTT 데이터 수집 로직이 동기적으로 처리되어 웹 제어 API가 후순위로 밀림
+- 단일 백엔드에서 데이터 수집과 웹 API를 동시에 처리하면서 리소스 경쟁 발생
+
+### 2. 알림 중복 발송
+
+**현상**: 백엔드 재배포 시 이미 발송된 알림이 중복으로 재발송되는 문제
+
+**원인**:
+- 알림 발송 상태를 메모리에서만 관리
+- 재기동 시 상태가 초기화되면서 이전 알림 기록이 소실
+
+**영향**:
+- 불필요한 SMS 비용 증가
+- 사용자에게 중복 알림으로 인한 혼란 발생
+
+### 3. 실시간 데이터 표시 문제
+
+**현상**: 실시간 데이터가 아닌 과거 데이터가 우선적으로 화면에 표시됨
+
+**원인**:
+- MQTT retain 설정으로 인해 브로커에 저장된 이전 메시지가 우선 수신
+- 타임스탬프 검증 없이 모든 메시지를 동일하게 처리
+
+---
+
+## 선택지와 판단
+
+### 문제 1: 웹 API 응답 지연 해결 방안
+
+| 방안 | 장점 | 단점 | 선택 |
+|------|------|------|------|
+| 비동기 처리 강화 | 코드 변경 최소화 | 근본적인 리소스 경쟁 미해결 | ❌ |
+| 스레드풀 크기 증가 | 간단한 설정 변경 | 서버 리소스 한계 | ❌ |
+| **백엔드 분리** | 책임 분리, 장애 전파 방지 | 운영 복잡도 증가 | ✅ |
+
+**선택 이유**:
+- MQTT 데이터 수집과 웹 API는 성격이 다른 워크로드
+- 각 서비스의 스케일링과 장애 대응을 독립적으로 수행 가능
+- Docker 환경에서 서비스 분리가 용이
+
+### 문제 2: 알림 상태 관리 방안
+
+| 방안 | 장점 | 단점 | 선택 |
+|------|------|------|------|
+| Redis 캐시 | 빠른 조회 | 추가 인프라 필요 | ❌ |
+| **DB 저장** | 영구 보존, 이력 추적 가능 | 약간의 성능 오버헤드 | ✅ |
+
+**선택 이유**:
+- 알림 발송 이력을 장기간 보관하여 문제 분석에 활용 가능
+- 기존 PostgreSQL을 활용하여 추가 인프라 불필요
+
+---
+
+## 구현 포인트
+
+### 1. 백엔드 아키텍처 분리
+
+```
+[센서] → [HMI] → [MQTT Broker]
+                     ↓
+        ┌────────────┴──────────────┐
+        ↓                           ↓
+[MQTT Collector Service]    [Web API Service]
+        ↓                           ↓
+    [PostgreSQL] ← ─ ─ ─ ─ ─ ─ ─ ─ ┘
+                                    ↓
+                              [프론트엔드]
+```
+
+### 2. MQTT 데이터 수집 서비스 분리
+
+```java
+@Service
+public class MqttMessageRouter {
+  
+  @MqttMessageHandler(topic = "v1/farm/+/device/+/data")
+  public void handleSensorData(MqttPayload payload) {
+    // 타임스탬프 검증
+    if (isOldData(payload.getTimestamp())) {
+      // 비동기 저장만 수행
+      asyncPersistenceService.saveAsync(payload);
+      return;
+    }
+    
+    // 실시간 데이터는 즉시 저장 및 처리
+    persistenceService.saveSensorData(payload);
+    
+    // 임계값 체크
+    if (thresholdExceeded(payload)) {
+      alertService.sendAlert(payload.getFarmId());
+    }
+  }
+  
+  private boolean isOldData(LocalDateTime timestamp) {
+    return timestamp.isBefore(LocalDateTime.now().minusMinutes(5));
+  }
+}
+```
+
+### 3. 알림 상태 DB 저장
+
+```java
+@Service
+public class AlertService {
+  
+  public void sendAlert(Long farmId, String alertType) {
+    // 최근 알림 발송 이력 확인
+    Optional<AlertLog> recentAlert = alertLogRepository
+      .findRecentAlert(farmId, alertType, LocalDateTime.now().minusMinutes(30));
+    
+    if (recentAlert.isPresent()) {
+      log.info("Alert already sent within 30 minutes, skipping");
+      return;
+    }
+    
+    // SMS 발송
+    smsService.send(farmId, alertType);
+    
+    // 발송 이력 저장
+    alertLogRepository.save(AlertLog.builder()
+      .farmId(farmId)
+      .alertType(alertType)
+      .sentAt(LocalDateTime.now())
+      .build());
+  }
+}
+```
+
+### 4. Docker Compose 구성
+
+```yaml
+version: '3.8'
+services:
+  web-api:
+    image: smartfarm-web-api:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    depends_on:
+      - postgres
+  
+  mqtt-collector:
+    image: smartfarm-mqtt-collector:latest
+    environment:
+      - MQTT_BROKER_URL=tcp://mqtt-broker:1883
+    depends_on:
+      - postgres
+      - mqtt-broker
+  
+  postgres:
+    image: postgres:14
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+  
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+```
+
+---
+
+## 결과
+
+### 정량적 성과
+- **응답 속도**: 웹 제어 API 응답 시간 안정화 (데이터 수집 시에도 일정한 응답 속도 유지)
+- **비용 절감**: SMS 중복 발송 방지로 월간 문자 비용 절감
+- **안정성**: 백엔드 재배포 시에도 알림 상태 유지
+
+### 정성적 성과
+- 실제 스마트팜 운영 환경에 배포 완료
+- 실시간 데이터 정상 표시로 사용자 만족도 향상
+- 서비스 별 독립 배포 및 스케일링 가능
+
+---
+
+## 회고
+
+### 잘한 점
+- **책임 분리 원칙 적용**: MQTT 데이터 수집과 웹 API를 분리하여 각 서비스의 독립성 확보
+- **문제 원인 정확한 파악**: 메모리 기반 상태 관리 → DB 저장으로 근본적인 문제 해결
+- **운영 환경 고려**: Docker를 활용한 표준화된 배포 환경 구성
+
+### 아쉬운 점
+- MQTT 브로커 장애 대응 시나리오 미비 (현재 단일 브로커 운영)
+- 센서 데이터 스키마 변경 시 유연성 부족 (하드코딩된 필드명)
+
+### 배운 점
+- **컴포넌트 및 서비스 간 책임 분리의 중요성**: 서비스를 분리하면 장애 전파 방지 및 독립적인 스케일링 가능
+- **동기/비동기 처리 전략**: 데이터 특성에 따라 실시간 처리와 비동기 처리를 구분하는 설계 경험
+- **상태 관리 전략**: 휘발성 데이터와 영구 보존 데이터를 명확히 구분하여 저장

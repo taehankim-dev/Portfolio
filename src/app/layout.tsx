@@ -1,19 +1,28 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
+import { SITE_CONFIG } from '@/lib/constants'
 
 export const metadata: Metadata = {
-  title: '김태한의 포트폴리오 사이트',
-  description: '김태한의 포트폴리오 사이트입니다.',
+    title: SITE_CONFIG.title,
+    description: SITE_CONFIG.description,
 }
 
 export default function RootLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode
+    children: React.ReactNode
 }) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  )
+    return (
+        <html lang="ko">
+            <body className="flex flex-col min-h-screen">
+                <Header />
+                <main className="flex-1 container mx-auto px-4 py-8">
+                    {children}
+                </main>
+                <Footer />
+            </body>
+        </html>
+    )
 }

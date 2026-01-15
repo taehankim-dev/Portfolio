@@ -1,0 +1,283 @@
+---
+title: "스마트팜 견적 시스템 2차 - 프리셋 모드"
+company: "대단"
+period: "2025.05 - 2025.08"
+role:
+  - "풀스택 개발"
+  - "프리셋 구조 설계"
+stack:
+  - "Vue 3"
+  - "TypeScript"
+  - "Capacitor"
+  - "Node.js"
+  - "PostgreSQL"
+  - "pm2"
+  - "Nginx"
+summary: "견적 항목·자재 구성·계산 규칙을 프리셋 단위로 관리하는 확장형 견적 시스템"
+problem: "1차 시스템 운영 중 견적 항목과 계산 규칙이 지속적으로 변경되며 유지보수 비용 증가"
+result:
+  - "프리셋 기반 구조로 견적 기준 변경 시 코드 수정 불필요"
+  - "이익률 일괄 적용 기능으로 프리셋 입력 시간 단축"
+  - "도메인 표준화의 중요성 검증"
+thumbnail: "/images/projects/estimate-v2-thumbnail.png"
+featured: true
+---
+
+## 문제 상황 & 해결 경험
+
+**문제**: 1차 견적 시스템 운영 중 견적 항목과 계산 규칙이 지속적으로 변경되며 유지보수 비용과 오류 발생 가능성 증가
+
+**역할**: 풀스택 개발 / 프리셋 기반 데이터 구조 설계 / 단독 개발
+
+**결과**:
+- 프리셋 기반 구조 구현으로 견적 규칙 변경 시 코드 수정 불필요
+- 이익률 일괄 적용으로 입력 효율 개선
+- 기술과 도메인 표준화의 선후관계 명확히 인식
+
+---
+
+## 배경
+
+1차 영업용 견적 시스템 운영 과정에서 드러난 문제점:
+
+- **견적 규칙의 잦은 변경**: 평수별 자재 수량, 계산 규칙이 지속적으로 변경
+- **코드 수정 부담**: 규칙 변경 시마다 코드를 수정해야 하며, 회귀 테스트 필요
+- **영업 현장별 차이**: 현장마다 상이한 견적 기준을 시스템적으로 흡수하기 어려움
+
+이러한 문제를 근본적으로 해결하기 위해, **견적 항목·자재 구성·계산 규칙을 데이터(프리셋)로 관리**하는 2차 시스템을 기획했습니다.
+
+---
+
+## 선택지와 판단
+
+### 견적 규칙 관리 방안
+
+| 방안 | 장점 | 단점 | 선택 |
+|------|------|------|------|
+| 코드 기반 관리 (1차 방식) | 구현 간단 | 규칙 변경 시 배포 필요 | ❌ |
+| **프리셋 기반 관리** | 코드 수정 없이 규칙 변경 가능 | 데이터 설계 복잡도 증가 | ✅ |
+| 룰 엔진 도입 | 고도의 유연성 | 학습 곡선 높음, 오버엔지니어링 | ❌ |
+
+**선택 이유**:
+- 영업팀이 직접 프리셋을 관리할 수 있는 구조
+- 코드 배포 없이 견적 기준 변경 가능
+- 단독 개발 환경에서 구현 가능한 적절한 복잡도
+
+---
+
+## 문제 상황 & 해결
+
+### 1. 평수와 무관한 자재 수량 처리
+
+**현상**: 영업팀에서 제공한 견적 기준상, 평수가 달라져도 특정 자재 수량이 동일하게 적용되는 사례 존재
+
+**기존 방식의 한계**:
+```typescript
+// 모든 자재를 평수 단위로 일괄 계산
+materials.forEach(material => {
+  material.quantity = area * material.unitPerArea;
+});
+```
+
+**해결 - 프리셋 데이터 구조**:
+```typescript
+interface MaterialPreset {
+  id: number;
+  name: string;
+  calculationType: 'PER_AREA' | 'FIXED' | 'RANGE_BASED';
+  unitPerArea?: number;  // PER_AREA 타입일 때
+  fixedQuantity?: number;  // FIXED 타입일 때
+  rangeRules?: Array<{  // RANGE_BASED 타입일 때
+    minArea: number;
+    maxArea: number;
+    quantity: number;
+  }>;
+}
+
+// 예시 데이터
+const materials: MaterialPreset[] = [
+  {
+    id: 1,
+    name: '센서',
+    calculationType: 'PER_AREA',
+    unitPerArea: 0.5  // 평당 0.5개
+  },
+  {
+    id: 2,
+    name: '제어기',
+    calculationType: 'FIXED',
+    fixedQuantity: 1  // 평수와 무관하게 1개
+  },
+  {
+    id: 3,
+    name: '배관',
+    calculationType: 'RANGE_BASED',
+    rangeRules: [
+      { minArea: 0, maxArea: 50, quantity: 10 },
+      { minArea: 51, maxArea: 100, quantity: 15 },
+      { minArea: 101, maxArea: Infinity, quantity: 20 }
+    ]
+  }
+];
+```
+
+**결과**:
+- 고객 환경에 따른 견적 산출 정확도 향상
+- 영업팀이 제시하는 다양한 계산 규칙 수용 가능
+
+### 2. 이익률 일괄 입력 불편
+
+**현상**: 다수의 자재 및 인건비 항목에 대해 이익률을 개별 입력해야 하는 불편함
+
+**원인**: 항목별 이익률이 상이하다는 가정 하에 개별 입력 구조로 설계
+
+**해결**:
+```vue
+<template>
+  <div class="preset-form">
+    <!-- 이익률 일괄 적용 -->
+    <div class="bulk-profit">
+      <label>이익률 일괄 적용</label>
+      <input 
+        type="number" 
+        v-model="bulkProfitRate"
+        placeholder="예: 30"
+      />
+      <button @click="applyBulkProfit">일괄 적용</button>
+    </div>
+    
+    <!-- 개별 항목 (필요 시 수정 가능) -->
+    <div v-for="item in items" :key="item.id">
+      <span>{{ item.name }}</span>
+      <input 
+        type="number" 
+        v-model="item.profitRate"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+const bulkProfitRate = ref<number>(30);
+
+const applyBulkProfit = () => {
+  items.value.forEach(item => {
+    item.profitRate = bulkProfitRate.value;
+  });
+};
+</script>
+```
+
+**결과**:
+- 프리셋 입력 및 관리 시간 단축
+- 개별 조정도 여전히 가능
+
+---
+
+## 구현 포인트
+
+### 1. 프리셋 기반 견적 계산 엔진
+
+```typescript
+class EstimateCalculator {
+  calculate(preset: Preset, area: number): EstimateResult {
+    const materials = this.calculateMaterials(preset.materials, area);
+    const labor = this.calculateLabor(preset.labor, area);
+    const total = materials + labor;
+    const profit = total * (preset.profitRate / 100);
+    
+    return {
+      materials,
+      labor,
+      subtotal: total,
+      profit,
+      total: total + profit
+    };
+  }
+  
+  private calculateMaterials(materials: MaterialPreset[], area: number): number {
+    return materials.reduce((sum, material) => {
+      const quantity = this.getQuantity(material, area);
+      return sum + (quantity * material.unitPrice);
+    }, 0);
+  }
+  
+  private getQuantity(material: MaterialPreset, area: number): number {
+    switch (material.calculationType) {
+      case 'PER_AREA':
+        return area * material.unitPerArea!;
+      case 'FIXED':
+        return material.fixedQuantity!;
+      case 'RANGE_BASED':
+        const rule = material.rangeRules!.find(r => 
+          area >= r.minArea && area <= r.maxArea
+        );
+        return rule?.quantity || 0;
+      default:
+        return 0;
+    }
+  }
+}
+```
+
+### 2. 프리셋 관리 DB 스키마
+
+```sql
+-- 프리셋 마스터
+CREATE TABLE presets (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  profit_rate DECIMAL(5, 2),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 자재 항목
+CREATE TABLE preset_materials (
+  id SERIAL PRIMARY KEY,
+  preset_id INT REFERENCES presets(id),
+  name VARCHAR(100) NOT NULL,
+  calculation_type VARCHAR(20) NOT NULL, -- PER_AREA, FIXED, RANGE_BASED
+  unit_per_area DECIMAL(10, 2),
+  fixed_quantity INT,
+  unit_price DECIMAL(10, 2) NOT NULL
+);
+
+-- 구간별 규칙
+CREATE TABLE material_range_rules (
+  id SERIAL PRIMARY KEY,
+  material_id INT REFERENCES preset_materials(id),
+  min_area INT NOT NULL,
+  max_area INT NOT NULL,
+  quantity INT NOT NULL
+);
+```
+
+---
+
+## 결과
+
+### 정량적 성과
+- 견적 규칙 변경 시 코드 수정 불필요 (0회 배포)
+- 프리셋 입력 시간 단축 (이익률 일괄 적용)
+
+### 정성적 성과
+- 프리셋 기반 견적 구조를 구현하며, **견적 계산 규칙의 복잡성과 도메인 의존성**을 명확히 인식
+- 기술적 구현 이전에, **현장 기준 및 계산 규칙의 합의·표준화가 선행되어야 함**을 검증
+
+---
+
+## 회고
+
+### 잘한 점
+- **확장 가능한 구조 설계**: 프리셋 기반으로 다양한 계산 규칙 수용
+- **사용성 개선**: 이익률 일괄 적용 등 실제 사용 편의성 고려
+- **도메인 복잡성 인식**: 기술적 해결과 조직적 합의의 차이 명확히 인식
+
+### 아쉬운 점
+- **실사용 미달성**: 기술적 완성도와 별개로, 견적 항목과 계산 규칙에 대한 조직 차원의 표준화가 선행되지 않아 실사용으로 이어지지 못함
+
+### 배운 점
+- **기술과 비즈니스의 경계**: 기술로 해결할 수 있는 영역과, 조직·도메인 차원의 합의가 필요한 영역을 구분하게 된 경험
+- **과도한 유연성의 함정**: 지나치게 유연한 구조는 오히려 사용자 혼란을 초래할 수 있음
+- **표준화의 중요성**: 시스템 도입 전 비즈니스 프로세스 표준화가 먼저 필요함
