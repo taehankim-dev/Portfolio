@@ -17,10 +17,10 @@ export default function HomePage() {
                     4년차 웹 개발자
                 </p>
                 <p className="text-gray-700 mb-2 leading-relaxed text-lg">
-                    운영되는 서비스 환경에서 구조·성능·배포를 책임져온 개발자
+                    배포 후에도 안정성을 유지하는 구조 설계와, 팀이 이해할 수 있는 코드를 작성하는 개발자
                 </p>
                 <p className="text-gray-600 mb-10 leading-relaxed">
-                    실무 문제 해결 경험을 케이스 스터디로 정리한 포트폴리오
+                    운영 중 발생한 문제를 임시방편이 아닌 아키텍처 수정으로 해결합니다
                 </p>
 
                 <div className="flex gap-4 justify-center">
@@ -32,6 +32,8 @@ export default function HomePage() {
                     </Link>
                     <a
                         href="#"
+                        // href="/김태한 이력서.pdf"
+                        // download="김태한 이력서.pdf"
                         className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 transition-colors text-sm font-medium"
                     >
                         이력서 다운로드
@@ -102,58 +104,6 @@ export default function HomePage() {
                             <span className="px-3 py-1 bg-gray-50 text-gray-600 rounded text-sm">MQTT</span>
                             <span className="px-3 py-1 bg-gray-50 text-gray-600 rounded text-sm">pm2</span>
                         </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* 4. Impact - 문제 → 선택 → 결과 */}
-            <section className="mb-24">
-                <h2 className="text-3xl font-bold mb-8 text-gray-900">주요 성과</h2>
-
-                <div className="space-y-10">
-                    <div>
-                        <h3 className="font-semibold text-lg mb-2 text-gray-900">
-                            백엔드 분리로 API 응답 안정화
-                        </h3>
-                        <p className="text-gray-600 leading-relaxed mb-2">
-                            <span className="font-medium text-gray-700">문제:</span> MQTT 데이터 수집과 웹 API가 같은 백엔드에서 동작하면서 센서 트래픽 증가 시 웹 화면이 느려지는 문제
-                        </p>
-                        <p className="text-gray-600 leading-relaxed mb-2">
-                            <span className="font-medium text-gray-700">선택:</span> MQTT 수집 전용 백엔드를 분리하고, 웹 API는 DB 조회만 담당하도록 아키텍처 재설계
-                        </p>
-                        <p className="text-gray-600 leading-relaxed">
-                            <span className="font-medium text-gray-700">결과:</span> 센서 데이터 유입량과 무관하게 웹 제어 API 응답 속도 안정화
-                        </p>
-                    </div>
-
-                    <div>
-                        <h3 className="font-semibold text-lg mb-2 text-gray-900">
-                            알림 상태 관리로 SMS 비용 절감
-                        </h3>
-                        <p className="text-gray-600 leading-relaxed mb-2">
-                            <span className="font-medium text-gray-700">문제:</span> 임계값 초과 알림이 센서 데이터 수신마다 중복 발송되어 SMS 비용 증가
-                        </p>
-                        <p className="text-gray-600 leading-relaxed mb-2">
-                            <span className="font-medium text-gray-700">선택:</span> 알림 발송 상태를 DB에 저장하고, 상태 변경 시에만 발송하도록 로직 개선
-                        </p>
-                        <p className="text-gray-600 leading-relaxed">
-                            <span className="font-medium text-gray-700">결과:</span> 중복 발송 방지로 문자 비용 절감 및 사용자 알림 피로도 감소
-                        </p>
-                    </div>
-
-                    <div>
-                        <h3 className="font-semibold text-lg mb-2 text-gray-900">
-                            프리셋 구조로 견적 규칙 변경 유연화
-                        </h3>
-                        <p className="text-gray-600 leading-relaxed mb-2">
-                            <span className="font-medium text-gray-700">문제:</span> 견적 항목과 계산 규칙이 지속적으로 변경되면서 코드 수정 및 배포 부담 증가
-                        </p>
-                        <p className="text-gray-600 leading-relaxed mb-2">
-                            <span className="font-medium text-gray-700">선택:</span> 견적 규칙을 코드가 아닌 데이터(프리셋)로 관리하는 구조로 재설계
-                        </p>
-                        <p className="text-gray-600 leading-relaxed">
-                            <span className="font-medium text-gray-700">결과:</span> 견적 기준 변경 시 코드 수정 없이 프리셋 데이터만 수정하여 대응 가능
-                        </p>
                     </div>
                 </div>
             </section>

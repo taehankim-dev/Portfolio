@@ -51,7 +51,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                     ))}
                 </div>
 
-                {/* TL;DR Box */}
+                {/* 문제 상황 & 해결 경험 Box */}
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r">
                     <dl className="space-y-4">
                         <div>

@@ -17,6 +17,14 @@ result:
 featured: false
 ---
 
+> **프로젝트 개요**
+>
+> CJ 올리브네트웍스의 JSP 기반 레거시 모니터링 시스템을 Vue.js로 전환한 프로젝트입니다. 과도한 API 호출로 인한 성능 저하와 유지보수 어려움을 개선하고, 데이터 시각화를 통해 모니터링 효율을 높였습니다.
+>
+> **프로젝트 성격**: 레거시 시스템을 모던 프론트엔드 기술로 점진적으로 개선한 프로젝트
+
+---
+
 ## 문제 상황 & 해결 경험
 
 **문제**: JSP 기반 레거시 모니터링 시스템의 유지보수 어려움과 과도한 API 호출로 인한 성능 저하
@@ -30,37 +38,16 @@ featured: false
 
 ---
 
-## 배경
-
-CJ 올리브네트웍스의 내부 **모니터링 시스템**은 JSP 기반으로 구축되어 있었습니다.
-
-문제점:
-- **레거시 기술 스택**: JSP + jQuery 기반으로 코드 유지보수 어려움
-- **성능 이슈**: 실시간 데이터 갱신을 위해 짧은 간격으로 API를 호출하면서 서버 부하 증가
-- **데이터 정합성**: DB 쿼리 결과와 화면 표시 데이터 불일치
-
----
-
 ## 문제 상황 & 해결
 
 ### 1. API 호출 과다
 
 **현상**: 모니터링 대시보드에서 1-2초마다 API를 호출하면서 서버 부하 증가
 
-**원인**:
-```javascript
-// Before: 레거시 jQuery 기반
-setInterval(() => {
-  $.ajax({
-    url: '/api/monitoring/status',
-    success: (data) => {
-      updateUI(data);
-    }
-  });
-}, 1000);  // 1초마다 호출
-```
+**해결**:
 
-**해결 - Throttle 적용**:
+Throttle을 적용하여 API 호출 간격을 5초로 조정하고 불필요한 요청을 제거했습니다.
+
 ```typescript
 // After: Vue.js + throttle
 import { throttle } from 'lodash-es';
@@ -88,29 +75,7 @@ onMounted(() => {
 
 ### 2. 레거시 코드 개선 - Vue.js 전환
 
-**Before (JSP + jQuery)**:
-```jsp
-<!-- legacy.jsp -->
-<div id="monitoring-panel">
-  <%
-    List<MonitoringData> dataList = ...;
-    for (MonitoringData data : dataList) {
-  %>
-    <div class="status-item">
-      <span><%= data.getName() %></span>
-      <span class="status <%= data.getStatus() %>">
-        <%= data.getStatus() %>
-      </span>
-    </div>
-  <% } %>
-</div>
-
-<script>
-  $(document).ready(function() {
-    // jQuery spaghetti code...
-  });
-</script>
-```
+JSP + jQuery 기반 코드를 Vue.js 컴포넌트 기반 구조로 전환하여 유지보수성을 높였습니다.
 
 **After (Vue.js)**:
 ```vue
@@ -140,72 +105,6 @@ onMounted(async () => {
   await fetchMonitoringData();
 });
 </script>
-```
-
-### 3. 데이터 시각화 개선
-
-**문제**: 텍스트 중심의 모니터링 화면으로 상태 파악 어려움
-
-**해결**:
-- Chart.js를 활용한 시계열 데이터 시각화
-- 색상 코딩으로 상태 직관적 표시
-- 실시간 차트 업데이트
-
-```vue
-<template>
-  <div class="chart-container">
-    <canvas ref="chartCanvas"></canvas>
-  </div>
-</template>
-
-<script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { Chart, registerables } from 'chart.js';
-
-Chart.register(...registerables);
-
-const chartCanvas = ref<HTMLCanvasElement>();
-let chart: Chart;
-
-onMounted(() => {
-  const ctx = chartCanvas.value?.getContext('2d');
-  if (ctx) {
-    chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'CPU Usage',
-          data: [],
-          borderColor: 'rgb(75, 192, 192)',
-        }]
-      }
-    });
-  }
-});
-</script>
-```
-
-### 4. DB 쿼리 정합성 문제
-
-**현상**: DB 쿼리 결과와 화면에 표시되는 데이터가 불일치
-
-**원인**: 
-- 여러 테이블 JOIN 시 중복 데이터 발생
-- 집계 함수 사용 시 GROUP BY 누락
-
-**해결**:
-```sql
--- Before: 중복 데이터 발생
-SELECT m.*, s.status_name
-FROM monitoring m
-LEFT JOIN status s ON m.status_id = s.id;
-
--- After: DISTINCT 및 GROUP BY 추가
-SELECT DISTINCT m.id, m.name, s.status_name, COUNT(*) as cnt
-FROM monitoring m
-LEFT JOIN status s ON m.status_id = s.id
-GROUP BY m.id, m.name, s.status_name;
 ```
 
 ---

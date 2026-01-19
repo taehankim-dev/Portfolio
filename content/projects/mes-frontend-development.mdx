@@ -18,6 +18,14 @@ result:
 featured: false
 ---
 
+> **프로젝트 개요**
+>
+> 웹 기반 MES(Manufacturing Execution System) 프론트엔드 개발 프로젝트입니다. Vuetify를 활용한 UI 퍼블리싱과 데이터 시각화 기능을 구현했으며, Atomic Design 개념을 참고하여 재사용 가능한 컴포넌트 구조를 설계했습니다.
+>
+> **프로젝트 성격**: 체계적인 컴포넌트 설계를 통해 유지보수성과 재사용성을 확보한 UI 개발 프로젝트
+
+---
+
 ## 문제 상황 & 해결 경험
 
 **문제**: MES 시스템 개발 과정에서 컴포넌트 재사용성 부족 및 유지보수 어려움
@@ -31,23 +39,13 @@ featured: false
 
 ---
 
-## 배경
-
-웹 기반 **MES(Manufacturing Execution System)** 프론트엔드 개발 프로젝트에 참여했습니다.
-
-주요 업무:
-- **UI 퍼블리싱**: Vuetify를 활용한 UI 구현
-- **데이터 시각화**: 생산 현황 및 통계 차트 구현
-- **컴포넌트 설계**: 재사용 가능한 컴포넌트 구조 개선
-
----
-
 ## 기술적 판단 & 설계 포인트
 
-### 1. Atomic Design 참고
+### Atomic Design 참고
 
-컴포넌트 재사용성과 유지보수성을 높이기 위해 **Atomic Design** 개념을 참고하여 컴포넌트를 계층적으로 구조화했습니다.
+컴포넌트 재사용성과 유지보수성을 높이기 위해 Atomic Design 개념을 참고하여 컴포넌트를 계층적으로 구조화했습니다.
 
+**컴포넌트 구조**:
 ```
 src/components/
 ├── atoms/           # 가장 작은 단위
@@ -67,45 +65,10 @@ src/components/
     └── FormLayout.vue
 ```
 
-### 2. 재사용 가능한 컴포넌트 예시
+**재사용 가능한 SearchBar 컴포넌트 예시**:
 
-#### Atom - Button 컴포넌트
-```vue
-<template>
-  <v-btn 
-    :color="color"
-    :size="size"
-    :variant="variant"
-    @click="handleClick"
-  >
-    <slot />
-  </v-btn>
-</template>
+Atom 컴포넌트들을 조합하여 검색바를 구성하고, 여러 페이지에서 재사용 가능하도록 설계했습니다.
 
-<script setup lang="ts">
-interface Props {
-  color?: string;
-  size?: 'small' | 'default' | 'large';
-  variant?: 'flat' | 'outlined' | 'text';
-}
-
-withDefaults(defineProps<Props>(), {
-  color: 'primary',
-  size: 'default',
-  variant: 'flat',
-});
-
-const emit = defineEmits<{
-  click: [];
-}>();
-
-const handleClick = () => {
-  emit('click');
-};
-</script>
-```
-
-#### Molecule - SearchBar 컴포넌트
 ```vue
 <template>
   <div class="search-bar">
@@ -138,82 +101,6 @@ const emit = defineEmits<{
 const handleSearch = () => {
   emit('search', searchQuery.value);
 };
-</script>
-```
-
-#### Organism - DataTable 컴포넌트
-```vue
-<template>
-  <v-data-table
-    :headers="headers"
-    :items="items"
-    :loading="loading"
-    :items-per-page="10"
-  >
-    <template #top>
-      <SearchBar @search="handleSearch" />
-    </template>
-    
-    <template #item.actions="{ item }">
-      <v-btn size="small" @click="editItem(item)">수정</v-btn>
-      <v-btn size="small" color="error" @click="deleteItem(item)">삭제</v-btn>
-    </template>
-  </v-data-table>
-</template>
-
-<script setup lang="ts">
-import SearchBar from '@/components/molecules/SearchBar.vue';
-
-interface Props {
-  headers: any[];
-  items: any[];
-  loading?: boolean;
-}
-
-withDefaults(defineProps<Props>(), {
-  loading: false,
-});
-</script>
-```
-
-### 3. 데이터 시각화
-
-생산 현황을 시각적으로 표현하기 위해 Chart.js를 활용했습니다.
-
-```vue
-<template>
-  <v-card>
-    <v-card-title>생산 현황</v-card-title>
-    <v-card-text>
-      <canvas ref="chartCanvas"></canvas>
-    </v-card-text>
-  </v-card>
-</template>
-
-<script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { Chart, registerables } from 'chart.js';
-
-Chart.register(...registerables);
-
-const chartCanvas = ref<HTMLCanvasElement>();
-
-onMounted(() => {
-  const ctx = chartCanvas.value?.getContext('2d');
-  if (ctx) {
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['1월', '2월', '3월', '4월', '5월'],
-        datasets: [{
-          label: '생산량',
-          data: [120, 150, 180, 170, 200],
-          backgroundColor: 'rgba(75, 192, 192, 0.6)',
-        }]
-      }
-    });
-  }
-});
 </script>
 ```
 

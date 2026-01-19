@@ -11,9 +11,18 @@ export function ProjectCard({ project }: ProjectCardProps) {
     return (
         <Link
             href={`/projects/${project.slug}`}
-            className="block border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors bg-white"
+            className={`block border rounded-lg overflow-hidden transition-colors bg-white relative ${project.featured
+                    ? 'border-gray-900 shadow-sm'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
         >
             <article>
+                {project.featured && (
+                    <div className="absolute top-4 left-4 px-3 py-1 bg-gray-900 text-white text-xs font-medium rounded z-10">
+                        대표 프로젝트
+                    </div>
+                )}
+
                 {project.thumbnail && (
                     <div className="relative w-full h-48 bg-gray-50">
                         <Image
@@ -37,6 +46,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
                     <p className="text-gray-600 mb-4 line-clamp-2 leading-relaxed">
                         {project.summary}
                     </p>
+
+                    {project.problem && (
+                        <p className="text-xs text-gray-500 mb-3 line-clamp-1">
+                            문제: {project.problem}
+                        </p>
+                    )}
 
                     <div className="flex flex-wrap gap-2 mb-4">
                         {project.stack.slice(0, 4).map(tech => (
