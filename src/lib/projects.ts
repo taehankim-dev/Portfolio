@@ -131,7 +131,8 @@ function calculateOverlapMonths(
     // 월 수 계산 (대략)
     const months = (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24 * 30);
 
-    return Math.max(0, Math.round(months));
+    // 최소 1개월 보장 (같은 달 프로젝트 포함)
+    return Math.max(1, Math.round(months));
 }
 
 /**
