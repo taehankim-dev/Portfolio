@@ -145,6 +145,12 @@ function matchProjectToExperience(
     project: ProjectFrontmatter,
     experiences: Experience[]
 ): string | null {
+    // 수동 지정 우선: experienceId가 있으면 자동 매칭 건너뜀
+    if (project.experienceId) {
+        const found = experiences.find(e => e.id === project.experienceId);
+        return found ? project.experienceId : null;
+    }
+
     const { start: projStart, end: projEnd } = parsePeriod(project.period);
 
     if (!projStart) {

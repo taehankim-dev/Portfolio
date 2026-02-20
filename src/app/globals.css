@@ -2,7 +2,23 @@
 @plugin "@tailwindcss/typography";
 
 @layer base {
+  :root {
+    --page-bg: #ebebea;
+    --card-bg: #ffffff;
+    --radius-card: 28px;
+    --radius-card-inner: 18px;
+  }
+
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
   body {
-    @apply text-gray-900 antialiased;
+    @apply antialiased text-gray-900;
+    background-color: var(--page-bg);
+  }
+
+  * {
+    box-sizing: border-box;
   }
 }

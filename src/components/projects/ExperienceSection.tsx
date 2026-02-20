@@ -12,16 +12,25 @@ export function ExperienceSection({ experience, projects }: ExperienceSectionPro
     if (projects.length === 0) return null;
 
     return (
-        <section className="mb-16">
+        <section
+            className="bg-white p-7"
+            style={{ borderRadius: '28px' }}
+        >
             {/* Experience Header */}
-            <div className="mb-8 pb-4 border-b border-gray-200">
-                <div className="flex items-baseline gap-4 mb-2">
-                    <h2 className="text-2xl font-bold text-gray-900">{experience.company}</h2>
-                    <span className="text-gray-500 text-sm">{formatExperiencePeriod(experience)}</span>
-                </div>
-                <p className="text-gray-600 text-sm">{experience.title}</p>
-                <p className="text-gray-500 text-sm mt-1">{experience.summary}</p>
+            <div className="flex items-center gap-3 mb-6">
+                <h2 className="text-base font-semibold text-gray-900">{experience.company}</h2>
+                <span
+                    className="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-medium"
+                    style={{ borderRadius: '999px' }}
+                >
+                    {formatExperiencePeriod(experience)}
+                </span>
+                <span className="text-xs text-gray-400 ml-auto">{experience.title}</span>
             </div>
+
+            {experience.summary && (
+                <p className="text-sm text-gray-500 mb-6 leading-relaxed">{experience.summary}</p>
+            )}
 
             {/* Projects Grid */}
             <ProjectList projects={projects} />

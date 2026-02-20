@@ -6,7 +6,10 @@ interface BadgeProps {
 
 export function Badge({ children }: BadgeProps) {
     return (
-        <span className="inline-block px-2.5 py-0.5 bg-gray-100 text-gray-700 rounded text-sm">
+        <span
+            className="inline-block px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium"
+            style={{ borderRadius: '999px' }}
+        >
             {children}
         </span>
     );

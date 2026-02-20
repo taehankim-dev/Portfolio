@@ -10,6 +10,7 @@ export interface ProjectFrontmatter {
     result: string[];
     thumbnail?: string;
     featured: boolean;
+    experienceId?: string;   // 수동 매칭용 (지정 시 자동 기간 매칭보다 우선)
 }
 
 export interface Project {

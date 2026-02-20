@@ -9,7 +9,14 @@ const config = {
     theme: {
         extend: {
             fontFamily: {
-
+                sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            },
+            borderRadius: {
+                'card': '28px',
+                'card-inner': '18px',
+            },
+            colors: {
+                'page': '#ebebea',
             }
         }
     },
