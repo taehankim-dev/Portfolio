@@ -41,14 +41,14 @@ export default function HomePage() {
                 <p className="text-gray-500 text-base mb-3 leading-relaxed max-w-xl mx-auto">
                     실사용 환경의 문제를 기술적으로 정의하고 해결하는 4년차 백엔드 개발자입니다.
                 </p>
-                <p className="text-gray-400 text-sm mb-2 leading-relaxed max-w-lg mx-auto">
+                {/* <p className="text-gray-400 text-sm mb-2 leading-relaxed max-w-lg mx-auto break-keep">
                     초당 50건의 센서 데이터 유입으로 인한 HikariCP 커넥션 풀 고갈 문제를
                     아키텍처 분리와 Bulk Insert 도입으로 해결하며 시스템 가용성을 확보했습니다.
                 </p>
-                <p className="text-gray-400 text-sm mb-10 leading-relaxed max-w-lg mx-auto">
+                <p className="text-gray-400 text-sm mb-10 leading-relaxed max-w-lg mx-auto break-keep">
                     복잡한 비즈니스 로직을 '프리셋' 구조로 추상화하여 견적 업무 시간을 83% 단축하는 등,
                     운영 현장의 문제를 구조적으로 해결하는 데 집중합니다.
-                </p>
+                </p> */}
 
                 <div className="flex gap-3 justify-center flex-wrap">
                     <Link
