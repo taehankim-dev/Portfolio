@@ -64,92 +64,106 @@ export default async function ProjectPage(
 
     return (
         <div className="space-y-4 pb-24 lg:pb-8">
-            {/* ── Project Header Card ─────────────────────────────────── */}
-            <div className="bg-white px-8 py-10" style={{ borderRadius: '28px' }}>
 
-                {/* 뒤로가기 */}
-                <Link
-                    href="/projects"
-                    className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors mb-6 font-medium"
-                >
-                    ← 프로젝트 목록
-                </Link>
-
-                {/* 제목 */}
-                <h1 className="text-2xl font-bold text-gray-900 leading-snug mb-3 tracking-tight">
-                    {frontmatter.title}
-                </h1>
-
-                {/* 메타 정보 */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 mb-6">
-                    <span>{frontmatter.company}</span>
-                    <span>·</span>
-                    <span>{frontmatter.period}</span>
-                    <span>·</span>
-                    <span>{frontmatter.role.join(', ')}</span>
-                </div>
-
-                {/* 기술 스택 뱃지 */}
-                <div className="flex flex-wrap gap-1.5 mb-8">
-                    {frontmatter.stack.map(tech => (
-                        <Badge key={tech}>{tech}</Badge>
-                    ))}
-                </div>
-
-                {/* 문제 / 성과 요약 카드 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div
-                        className="bg-gray-50 px-5 py-4"
-                        style={{ borderRadius: '16px' }}
-                    >
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
-                            Problem
-                        </p>
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                            {frontmatter.problem}
-                        </p>
-                    </div>
-                    <div
-                        className="bg-gray-50 px-5 py-4"
-                        style={{ borderRadius: '16px' }}
-                    >
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
-                            Result
-                        </p>
-                        <ul className="space-y-1.5">
-                            {frontmatter.result.map((r, i) => (
-                                <li key={i} className="text-sm text-gray-700 leading-relaxed flex gap-2">
-                                    <span className="text-gray-300 shrink-0 mt-0.5">→</span>
-                                    <span>{r}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            {/* ── 2-Column Layout: Body + TOC ────────────────────────── */}
+            {/* ── 헤더 + 바디 + TOC를 하나의 flex로 묶음 ──────────────── */}
+            {/* 헤더와 바디가 동일한 flex-1 컬럼에 있어 너비 일치 */}
             <div className="flex gap-4 items-start">
 
-                {/* 본문 카드 */}
-                <div className="bg-white px-8 py-8 flex-1 min-w-0" style={{ borderRadius: '28px' }}>
-                    <MDXRemote
-                        source={content}
-                        components={mdxComponents}
-                        options={{
-                            mdxOptions: {
-                                remarkPlugins: [remarkGfm],
-                            },
-                        }}
-                    />
+                {/* 왼쪽 컬럼: 헤더 카드 + 바디 카드 (동일 너비) */}
+                <div className="flex-1 min-w-0 space-y-4">
+
+                    {/* ── Project Header Card ───────────────────────────── */}
+                    <div
+                        className="bg-white px-4 sm:px-8 py-10 shadow-sm"
+                        style={{ borderRadius: '28px' }}
+                    >
+                        {/* 뒤로가기 */}
+                        <Link
+                            href="/projects"
+                            className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors mb-6 font-medium"
+                        >
+                            ← 프로젝트 목록
+                        </Link>
+
+                        {/* 제목 */}
+                        <h1 className="text-2xl font-bold text-gray-900 leading-snug mb-3 tracking-tight">
+                            {frontmatter.title}
+                        </h1>
+
+                        {/* 메타 정보 */}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 mb-6">
+                            <span>{frontmatter.company}</span>
+                            <span>·</span>
+                            <span>{frontmatter.period}</span>
+                            <span>·</span>
+                            <span>{frontmatter.role.join(', ')}</span>
+                        </div>
+
+                        {/* 기술 스택 뱃지 */}
+                        <div className="flex flex-wrap gap-1.5 mb-8">
+                            {frontmatter.stack.map(tech => (
+                                <Badge key={tech}>{tech}</Badge>
+                            ))}
+                        </div>
+
+                        {/* 문제 / 성과 요약 카드 */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div
+                                className="bg-gray-50 px-5 py-4"
+                                style={{ borderRadius: '16px' }}
+                            >
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
+                                    Problem
+                                </p>
+                                <p className="text-sm text-gray-700 leading-relaxed">
+                                    {frontmatter.problem}
+                                </p>
+                            </div>
+                            <div
+                                className="bg-gray-900 px-5 py-4"
+                                style={{ borderRadius: '16px' }}
+                            >
+                                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">
+                                    Result
+                                </p>
+                                <ul className="space-y-1.5">
+                                    {frontmatter.result.map((r, i) => (
+                                        <li key={i} className="text-sm text-gray-200 leading-relaxed flex gap-2">
+                                            <span className="text-gray-500 shrink-0 mt-0.5">→</span>
+                                            <span>{r}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Body Card ─────────────────────────────────────── */}
+                    <div
+                        className="bg-white px-4 sm:px-8 py-10 shadow-sm overflow-x-hidden break-keep"
+                        style={{ borderRadius: '28px' }}
+                    >
+                        <MDXRemote
+                            source={content}
+                            components={mdxComponents}
+                            options={{
+                                mdxOptions: {
+                                    remarkPlugins: [remarkGfm],
+                                },
+                            }}
+                        />
+                    </div>
+
                 </div>
 
-                {/* Desktop TOC sidebar */}
+                {/* 오른쪽: TOC — 콘텐츠 우측에 sticky (lg 이상) */}
                 <TableOfContents headings={headings} />
+
             </div>
 
-            {/* Mobile TOC floating button */}
+            {/* Mobile TOC floating button (lg 미만) */}
             <MobileToC headings={headings} />
+
         </div>
     );
 }

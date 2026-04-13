@@ -11,7 +11,7 @@ export const mdxComponents = {
         return (
             <h2
                 id={id}
-                className="text-lg font-semibold text-gray-800 pt-8 pb-2 border-b border-gray-100 mb-5 scroll-mt-24"
+                className="text-lg font-semibold text-gray-800 pt-10 pb-2 border-b border-gray-100 mb-6 scroll-mt-24 tracking-tight"
                 {...props}
             >
                 {children}
@@ -31,7 +31,7 @@ export const mdxComponents = {
         return (
             <h3
                 id={id}
-                className="text-sm font-semibold text-gray-700 mt-6 mb-3 scroll-mt-24"
+                className="text-sm font-semibold text-gray-700 mt-8 mb-3 scroll-mt-24 tracking-tight"
                 {...props}
             >
                 {children}
@@ -58,19 +58,19 @@ export const mdxComponents = {
 
     // ─── Paragraph ───────────────────────────────────────────────────────
     p: ({ children }: any) => (
-        <p className="text-sm text-gray-700 leading-[1.85] mb-4 break-keep">
+        <p className="text-sm text-gray-700 leading-[1.9] mb-5 break-keep">
             {children}
         </p>
     ),
 
     // ─── Lists ───────────────────────────────────────────────────────────
     ul: ({ children }: any) => (
-        <ul className="mb-4 space-y-1.5 pl-1">
+        <ul className="mb-5 space-y-2 pl-1">
             {children}
         </ul>
     ),
     ol: ({ children }: any) => (
-        <ol className="mb-4 space-y-1.5 pl-1 list-decimal list-inside">
+        <ol className="mb-5 space-y-2 pl-1 list-decimal list-inside">
             {children}
         </ol>
     ),
@@ -108,12 +108,25 @@ export const mdxComponents = {
     ),
 
     // ─── Code blocks (pre + code) ────────────────────────────────────────
-    pre: (props: any) => (
-        <pre
-            className="bg-gray-950 text-gray-100 p-5 rounded-xl overflow-x-auto my-5 text-xs leading-relaxed [&_code]:bg-transparent [&_code]:p-0 [&_code]:text-inherit shadow-sm"
-            {...props}
-        />
-    ),
+    pre: ({ children, ...props }: any) => {
+        const language = children?.props?.className?.replace('language-', '') ?? null;
+
+        return (
+            <div className="relative my-5">
+                {language && (
+                    <span className="absolute top-3 right-3 text-[10px] font-mono text-gray-500 bg-gray-800 px-2 py-0.5 rounded select-none z-10 pointer-events-none">
+                        {language}
+                    </span>
+                )}
+                <pre
+                    className="bg-gray-950 text-gray-100 p-5 rounded-xl overflow-x-auto text-xs leading-relaxed [&_code]:bg-transparent [&_code]:p-0 [&_code]:text-inherit shadow-sm"
+                    {...props}
+                >
+                    {children}
+                </pre>
+            </div>
+        );
+    },
     code: (props: any) => (
         <code
             className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded-md text-xs font-mono not-prose"

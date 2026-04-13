@@ -2,7 +2,7 @@ import { Badge } from '@/components/common/Badge';
 
 const techStacks = {
     'Frontend': ['Next.js', 'Vue 3', 'TypeScript', 'Tailwind CSS', 'Capacitor'],
-    'Backend': ['Spring Boot', 'Node.js', 'PostgreSQL'],
+    'Backend': ['Java', 'Spring Boot', 'Node.js', 'PostgreSQL'],
     'Data & Infra': ['MQTT', 'Docker', 'Nginx', 'pm2'],
     'Collaboration': ['Git', 'GitHub', 'Notion'],
 };

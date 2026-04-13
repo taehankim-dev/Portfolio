@@ -26,7 +26,7 @@ export default function RootLayout({
             </head>
             <body className="flex flex-col min-h-screen" style={{ backgroundColor: '#ebebea' }}>
                 <Header />
-                <main className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 pb-8">
+                <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 md:px-6 pb-8">
                     {children}
                 </main>
                 <Footer />

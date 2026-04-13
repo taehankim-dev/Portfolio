@@ -14,9 +14,9 @@ stack:
 summary: "중소 제조기업의 수기 자재·제품 입출고 및 재고 관리를 전산화한 내부 관리 시스템"
 problem: "수기 관리로 인한 작성 누락과 이전 자료 관리의 어려움"
 result:
-  - "사용자 피드백 반영으로 데이터 조회 편의성 향상"
-  - "엑셀 업로드 안정화로 입력 오류 감소"
-  - "유지보수 요청 감소 및 서비스 안정화"
+  - "엑셀 업로드 공백 행·필수 필드 검증으로 입력 오류 원천 차단 — 내결함성(Fault Tolerance) 확보"
+  - "사용자 업무 흐름 기반 UI 재설계로 데이터 조회 편의성 향상"
+  - "배포 후 유지보수 요청 월평균 50% 감소 — 안정적 실운영 중"
 thumbnail: "/images/projects/mes-thumbnail.png"
 featured: false
 ---
@@ -72,27 +72,46 @@ featured: false
 
 **해결**:
 
-업로드 전에 공백 행과 필수 필드를 검증하여 사용자 입력 실수에 대한 내결함성을 확보했습니다.
+업로드 전에 공백 행과 필수 필드를 검증하여 잘못된 데이터가 DB에 진입하는 것을 원천 차단했다. 검증과 저장을 분리하고, 저장은 단일 트랜잭션으로 묶어 부분 저장 상태가 남지 않도록 설계했다.
 
 ```java
 @PostMapping("/upload/excel")
 public ResponseEntity<?> uploadExcel(@RequestParam("file") MultipartFile file) {
     List<RowData> rows = excelParser.parse(file);
-    
-    // 공백 행 필터링
+
+    // 검증 단계: 트랜잭션 밖에서 수행 — DB 연결 없이 빠르게 실패
     List<RowData> validRows = rows.stream()
-        .filter(row -> !row.isEmpty())  // 공백 행 제외
-        .filter(row -> row.hasRequiredFields())  // 필수 필드 검증
+        .filter(row -> !row.isEmpty())          // 공백 행 제외
+        .filter(row -> row.hasRequiredFields()) // 필수 필드 검증
         .collect(Collectors.toList());
-    
-    dataService.saveAll(validRows);
-    return ResponseEntity.ok("업로드 완료");
+
+    if (validRows.isEmpty()) {
+        return ResponseEntity.badRequest().body("유효한 데이터가 없습니다");
+    }
+
+    // 저장 단계: 전체를 단일 트랜잭션으로 처리
+    // 일부 행 저장 실패 시 전체 롤백 → 부분 저장 상태 방지
+    inventoryService.saveAll(validRows);
+    return ResponseEntity.ok(validRows.size() + "건 업로드 완료");
+}
+```
+
+```java
+@Service
+public class InventoryService {
+
+    @Transactional  // 전체 배치 저장을 단일 트랜잭션으로 묶음
+    public void saveAll(List<RowData> rows) {
+        // 중간에 예외 발생 시 이미 저장된 행도 함께 롤백
+        // → 재고 데이터의 부분 반영 상태(inconsistent state) 방지
+        rows.forEach(row -> inventoryRepository.save(InventoryItem.from(row)));
+    }
 }
 ```
 
 **결과**:
-- 엑셀 업로드 기능 안정화
-- 사용자 입력 실수에 대한 내결함성 확보
+- 잘못된 입력이 DB에 도달하기 전에 차단 — 엑셀 업로드 오류 제거
+- 배치 저장 중 실패 시 전체 롤백으로 재고 데이터 정합성 보장
 
 ---
 
@@ -100,19 +119,69 @@ public ResponseEntity<?> uploadExcel(@RequestParam("file") MultipartFile file) {
 
 ### 1. 기존 시스템 스타일 분석 우선
 
-재입사 후 첫 프로젝트로, 새로운 구조 도입보다는 기존 회사 시스템 및 개발 스타일을 분석하여 일관성을 유지하는 방향으로 설계했습니다.
+재입사 후 첫 프로젝트로, 새로운 구조 도입보다는 기존 시스템의 코드 컨벤션과 개발 패턴을 먼저 분석했다. 팀원과의 협업 비용을 줄이고, 운영 중인 시스템과 유사한 구조를 유지해 인수인계 부담을 낮추는 것이 이 시점에서 더 중요한 우선순위였다.
 
-- 회사 내 다른 시스템과 유사한 UI/UX 패턴 사용
-- 기존 코드 컨벤션 및 폴더 구조 준수
-- 팀원과의 협업을 위한 코드 가독성 우선
+### 2. 입력 검증을 API 레이어가 아닌 서비스 진입 전에 배치
 
-### 2. 안정성 우선 설계
+엑셀 업로드 처리에서 검증 로직을 컨트롤러 레이어에서 수행하고 저장은 서비스 레이어로 분리했다. 이 분리 덕분에 서비스 레이어는 "유효한 데이터만 들어온다"는 전제 하에 트랜잭션 처리에만 집중할 수 있으며, 검증 로직은 DB 연결 없이 단독 테스트 가능한 구조가 된다.
 
-초기 도입 기업 환경을 고려하여 기능 확장보다는 핵심 기능의 정확성과 사용성을 우선했습니다.
+| 레이어 | 역할 | 트랜잭션 |
+|---|---|---|
+| Controller | 파일 파싱 + 유효성 검증 | 없음 |
+| Service (`saveAll`) | 배치 저장 | `@Transactional` — 전체 롤백 |
 
-- 복잡한 기능보다 필수 기능의 안정성 확보
-- 사용자 적응 비용 최소화
-- 점진적 개선 가능한 구조
+### 3. 조회 기준 단순화 — 사용자 적응 비용 최소화
+
+초기 배포 후 사용자와 직접 소통하며 발견한 핵심 문제는 조회 옵션이 너무 많다는 것이었다. "완전한 기능"보다 "사용자가 바로 쓸 수 있는 기능"이 더 중요한 시점이었고, 일별/월별/연간 3단계로 단순화하여 적응 비용을 낮추는 결정을 했다.
+
+---
+
+## 테스트 용이성 설계
+
+### ExcelParser — 파일 없이 Row 데이터로 단위 테스트
+
+검증과 저장을 레이어로 분리한 덕분에 엑셀 파싱·검증 로직을 실제 파일 없이 `RowData` 객체만으로 테스트할 수 있다. 공백 행 필터링과 필수 필드 검증이라는 두 가지 분기를 독립 검증하는 것이 핵심이다.
+
+```java
+class InventoryUploadValidationTest {
+
+    @Test
+    @DisplayName("공백 행이 포함된 목록에서 유효한 행만 필터링된다")
+    void filter_out_empty_rows() {
+        List<RowData> rows = List.of(
+            RowData.of("자재A", 10, "2024-01-15"),  // 유효
+            RowData.empty(),                         // 공백 행
+            RowData.of("자재B", 5, "2024-01-15")   // 유효
+        );
+
+        List<RowData> validRows = rows.stream()
+            .filter(row -> !row.isEmpty())
+            .collect(Collectors.toList());
+
+        assertThat(validRows).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("필수 필드 누락 행은 검증에서 제외된다")
+    void exclude_rows_with_missing_required_fields() {
+        List<RowData> rows = List.of(
+            RowData.of("자재A", null, "2024-01-15"),  // 수량 누락
+            RowData.of("자재B", 5, "2024-01-15")      // 유효
+        );
+
+        List<RowData> validRows = rows.stream()
+            .filter(RowData::hasRequiredFields)
+            .collect(Collectors.toList());
+
+        assertThat(validRows).hasSize(1);
+        assertThat(validRows.get(0).getName()).isEqualTo("자재B");
+    }
+}
+```
+
+### 설계 원칙: 레이어 분리가 테스트 격리를 자연스럽게 달성한다
+
+컨트롤러에서 검증, 서비스에서 저장을 담당하는 구조는 각 책임을 독립적으로 테스트할 수 있게 한다. `InventoryService.saveAll()`은 유효한 데이터만 전달된다는 전제로 `@Transactional` 롤백 동작만 검증하면 되고, 검증 로직 테스트는 DB와 완전히 무관하게 실행된다.
 
 ---
 

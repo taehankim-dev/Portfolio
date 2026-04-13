@@ -16,9 +16,9 @@ stack:
 summary: "스마트팜을 설치하는 고객의 환경에 따라 변경될 수 있는 예상 견적 시스템 - 견적 항목·자재 구성·계산 규칙을 프리셋 단위로 관리"
 problem: "1차 시스템 운영 중 견적 항목과 계산 규칙이 지속적으로 변경되며 유지보수 비용 증가"
 result:
-  - "프리셋 재사용성과 계산 정확도를 동시에 확보하며 고객 환경별 견적 산출 신뢰도 향상"
-  - "신규 항목 추가 시 코드 수정 없이 대응 가능해졌으며 계산 로직의 유지보수성과 확장성 확보"
-  - "기술적 구현 이전에 현장 기준 및 계산 규칙의 합의·표준화가 선행되어야 함을 검증"
+  - "계산 규칙을 코드가 아닌 DB 데이터로 분리 → 신규 항목 추가 시 기존 코드 무변경(OCP) 달성"
+  - "프리셋 기준값·실제 입력값 보정 구조로 고객 환경별 견적 계산 정확도 보장"
+  - "기술 구현 완료 후 조직 차원 표준화 부재로 실사용 미달성 → 기술과 도메인 합의의 선후관계 확인"
 thumbnail: "/images/projects/estimate-v2-thumbnail.png"
 featured: true
 ---
@@ -57,9 +57,9 @@ featured: true
 | 룰 엔진 도입 | 고도의 유연성, 복잡한 규칙 표현 | 학습 곡선 높음, 오버엔지니어링 | ❌ |
 
 **결정 이유**:
-- 영업 현장의 견적 기준 변경 빈도가 높아 유연성 확보 필수
-- 단독 개발 환경에서 구현 가능한 적절한 복잡도
-- 향후 영업팀이 직접 프리셋 관리 가능한 구조
+- **배포 위험 제거**: 코드 기반 관리에서는 규칙 변경 = 코드 수정 = 배포 = 회귀 위험. 변경 빈도가 높은 견적 규칙을 코드에 두면 사소한 수정에도 전체 재테스트·재배포가 필요해 운영 리스크가 누적됨
+- **OCP 달성**: 신규 계산 유형(`calculationType`) 추가 시 기존 `EstimateCalculator` 코드를 수정하지 않고 DB 데이터만 추가하면 되는 구조 — 확장에는 열려 있고 기존 로직 변경에는 닫혀 있음
+- **단독 개발 환경 적합성**: 룰 엔진 도입은 학습·구현 비용 대비 과도 — 현재 요구사항은 프리셋 단위 데이터 설계로 충분히 해결 가능
 
 ---
 
@@ -261,17 +261,62 @@ CREATE TABLE material_range_rules (
 
 ---
 
+## 테스트 용이성 설계
+
+계산 규칙을 데이터로 분리한 구조는 성능·유지보수 이점뿐 아니라 **테스트 격리**에도 직접적인 이점을 준다.
+
+### EstimateCalculator — 순수 함수로 단위 테스트 격리
+
+`calculate(preset, area)` 메서드는 외부 I/O 없이 입력값만으로 결과를 결정하는 순수 함수다. DB 연결 없이 `MaterialPreset` 객체만 전달해 `calculationType` 분기별 계산 정확도를 독립 검증할 수 있다.
+
+```typescript
+describe('EstimateCalculator', () => {
+
+  describe('PER_AREA 타입: 면적 비례 계산', () => {
+    it('50평 면적에 대해 unitPerArea 0.5 기준으로 25개를 반환한다', () => {
+      const material: MaterialPreset = {
+        id: 1, name: '센서',
+        calculationType: 'PER_AREA',
+        unitPerArea: 0.5,
+        unitPrice: 10000,
+      };
+      const calculator = new EstimateCalculator();
+      const result = calculator.calculate({ materials: [material], labor: [], profitRate: 0 }, 50);
+      expect(result.materials).toBe(250000); // 25개 × 10,000원
+    });
+  });
+
+  describe('RANGE_BASED 타입: 구간 경계값 검증', () => {
+    it('51평은 두 번째 구간(51-100)의 수량 15를 적용한다', () => {
+      const material: MaterialPreset = {
+        id: 3, name: '배관',
+        calculationType: 'RANGE_BASED',
+        unitPrice: 5000,
+        rangeRules: [
+          { minArea: 0, maxArea: 50, quantity: 10 },
+          { minArea: 51, maxArea: 100, quantity: 15 },
+        ],
+      };
+      const calculator = new EstimateCalculator();
+      const result = calculator.calculate({ materials: [material], labor: [], profitRate: 0 }, 51);
+      expect(result.materials).toBe(75000); // 15개 × 5,000원
+    });
+  });
+});
+```
+
+### 설계 원칙: 비즈니스 규칙을 데이터로 분리하면 테스트도 데이터로 작성된다
+
+`calculationType`을 코드 분기(`if/else`)로 처리했다면 규칙 추가마다 테스트 코드도 함께 수정해야 한다. 데이터 기반 구조에서는 새로운 `MaterialPreset` 객체를 테스트에 전달하기만 하면 되므로, **테스트 확장 비용이 구현 확장 비용과 동일하게 낮아진다**.
+
+---
+
 ## 결과
 
-### 정량적 성과
-- 견적 규칙 변경 시 코드 수정 불필요 (0회 배포)
-- 프리셋 입력 시간 단축 (이익률 일괄 적용)
-- 신규 견적 유형 추가 시 기존 로직 수정 없이 확장 가능함을 검증
-
-### 정성적 성과
-- 프리셋 단위로 계산 규칙을 분리하며, 신규 견적 유형 추가 시 기존 로직 수정 없이 확장 가능함을 검증
-- 기술적 구현 이전에, **현장 기준 및 계산 규칙의 합의·표준화가 선행되어야 함**을 검증
-- 기술적 완성도와 별개로, 견적 항목과 계산 규칙에 대한 조직 차원의 표준화가 선행되지 않아 실사용으로 이어지지 못했으나, 기술로 해결할 수 있는 영역과 조직·도메인 차원의 합의가 필요한 영역을 구분하게 된 중요한 경험
+### 구조적 성과
+- **OCP 검증**: `calculationType` 필드 추가만으로 신규 계산 방식을 수용 — 운영 중 견적 규칙이 변경되어도 기존 `EstimateCalculator` 코드 무변경, 재배포·회귀 테스트 불필요
+- **입력 보정 구조 확보**: 프리셋 기준값과 실제 입력값을 분리 관리하여 동일 프리셋으로 다양한 고객 환경을 수용하면서도 계산 정확도 보장
+- **기술과 도메인의 선후관계 확인**: 계산 엔진과 DB 스키마는 완성됐으나 조직 차원의 견적 기준 합의가 선행되지 않아 실사용 미달성 — 기술로 해결할 수 있는 영역과 도메인 표준화가 선행되어야 하는 영역의 경계를 실제로 확인한 경험
 
 ---
 

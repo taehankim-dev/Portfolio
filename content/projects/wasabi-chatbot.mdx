@@ -15,9 +15,9 @@ stack:
 summary: "스마트팜 와사비 재배 정보를 제공하는 실험적 AI 챗봇 시스템"
 problem: "와사비 재배에 대한 정보를 챗봇 형태로 제공하고, 이미지 분석 기능을 함께 제공 필요"
 result:
-  - "텍스트 질의응답 + 이미지 분석 기능을 하나의 챗봇 UX로 통합"
-  - "Vue, Node.js, Python 환경에서 AI 모델 연동 경험"
-  - "내부 테스트 단계에서 진행"
+  - "Node.js(텍스트)·Python(이미지) 서버를 분리하고 Vue가 단일 진입점으로 라우팅 — 언어별 AI 런타임 요구사항을 구조로 흡수"
+  - "AI 응답 지연 구간을 스트리밍 UI로 처리 — 긴 응답 대기 시간을 사용자 경험 관점에서 관리"
+  - "실험적 프로젝트로 내부 테스트 완료 — AI 기능의 구조적 제약과 프로덕션 적용 기준 확인"
 featured: false
 ---
 
@@ -44,32 +44,74 @@ featured: false
 
 ## 구현 포인트
 
-### 1. AI 기능을 서비스 흐름에 적용
+### 1. 멀티 서버 구조 — 언어별 AI 런타임 요구사항을 구조로 흡수
 
-텍스트 기반 질의 응답과 이미지 분석 기능을 하나의 챗봇 UX로 제공하기 위해, 프론트엔드–백엔드–AI 서버 간 요청 흐름을 구성했습니다.
+텍스트 질의응답(Gemini AI)과 이미지 분석(YOLOv8)을 하나의 서버에 통합하면 Node.js와 Python의 런타임 의존성이 충돌한다. YOLOv8은 Python 생태계(PyTorch, CUDA)에 강하게 의존하기 때문에 Node.js에서 직접 구동하기 어렵다. 서버를 분리하고 Vue가 단일 진입점으로 요청을 라우팅하는 구조를 선택했다.
 
-AI 모델 자체보다, 실제 서비스에서 어떻게 연결되고 동작하는지를 이해하는 데 초점을 둔 실험적 경험이었습니다.
+```
+사용자 입력
+    │
+    ├─ 텍스트 질문 ──→ Node.js API ──→ Google Gemini AI
+    │                                        │
+    └─ 이미지 업로드 ──→ Python API ──→ YOLOv8 + Gemini AI
+                                             │
+                         Vue 3 ←────────────┘
+                    (단일 챗봇 UX로 통합)
+```
 
-**프론트엔드–백엔드–AI 서버 연동**
+이 구조에서 각 서버는 자신의 AI 런타임 환경에만 집중할 수 있고, Vue는 입력 유형에 따라 적절한 서버로 라우팅하는 책임만 가진다. 실험 단계에서는 이 분리가 오히려 각 서버를 독립적으로 테스트하기 좋은 구조가 됐다.
 
-- Vue 3: 사용자 인터페이스 및 채팅 UX
-- Node.js: 텍스트 질의응답 API (Google Gemini AI 연동)
-- Python: 이미지 분석 API (YOLOv8 + Google Gemini AI 연동)
+### 2. AI 응답 지연 — 사용자 경험 관점의 처리
 
-### 2. 여러 기술 조합 탐색
+Gemini AI 응답은 수 초가 걸릴 수 있다. 응답이 완료될 때까지 빈 화면을 보여주면 사용자는 오류로 오해할 수 있다. 스트리밍 방식으로 응답 토큰이 생성되는 즉시 화면에 표시하여 "응답이 생성되고 있다"는 피드백을 제공했다.
 
-Vue, Node.js, Python 기반 환경에서 서로 다른 기술을 연결하기 위해 다양한 예제와 문서를 참고하며 연동 방식을 시도했습니다.
+```typescript
+// Node.js: Gemini 스트리밍 응답을 SSE로 클라이언트에 전달
+app.post('/api/chat', async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
 
-이 과정에서 AI 기능을 서비스에 적용할 때 고려해야 할 구조적 제약과 난이도를 체감했습니다.
+  const stream = await gemini.generateContentStream(req.body.message);
+
+  for await (const chunk of stream) {
+    const text = chunk.text();
+    // 토큰 단위로 즉시 전송 — 전체 응답 완료를 기다리지 않음
+    res.write(`data: ${JSON.stringify({ text })}\n\n`);
+  }
+
+  res.write('data: [DONE]\n\n');
+  res.end();
+});
+```
+
+```typescript
+// Vue 3: SSE 수신하며 실시간으로 메시지 누적
+async function sendMessage(input: string) {
+  const eventSource = new EventSource('/api/chat?message=' + encodeURIComponent(input));
+  let accumulated = '';
+
+  eventSource.onmessage = (e) => {
+    if (e.data === '[DONE]') { eventSource.close(); return; }
+    accumulated += JSON.parse(e.data).text;
+    currentMessage.value = accumulated; // 화면에 실시간 반영
+  };
+}
+```
+
+### 3. 실험에서 확인한 구조적 제약
+
+- **YOLOv8 콜드 스타트**: 모델 로딩에 수 초가 걸려 첫 요청 응답이 느림 — 프로덕션 적용 시 사전 워밍업(warm-up) 필요
+- **Python 서버 안정성**: 예외 처리가 미흡할 경우 이미지 분석 요청 하나가 서버 전체를 멈출 수 있음 — 프로세스 격리 또는 타임아웃 설계 필요
+- **AI 응답 비결정성**: 동일 입력에 대해 항상 동일한 출력이 보장되지 않아 기능 단위 테스트 작성이 어려움 — 응답 포맷 검증(키 존재 여부, 타입) 수준으로 테스트 범위를 제한하는 것이 현실적
 
 ---
 
 ## 결과
 
-### 정성적 성과
-- AI 기능을 서비스 흐름에 적용해본 실험적 경험
-- 여러 기술 조합을 시도하며 연동 방식 탐색
-- 내부 테스트 단계 완료
+### 확인한 것들
+- **구조 결정이 먼저**: Node.js와 Python을 분리하는 구조를 선택하는 것 자체가 "AI 런타임 요구사항을 어떻게 수용할 것인가"라는 백엔드 설계 문제였음 — 기술 스택 선택보다 구조 결정이 먼저라는 것을 실험에서 확인
+- **AI의 프로덕션 제약**: 응답 비결정성, 콜드 스타트, 프로세스 격리 필요성 등 실험 단계에서 확인한 제약들이 실제 서비스 적용 전 해결해야 할 기술적 과제로 구체화됨
+- **테스트 한계 인식**: AI 응답의 비결정성으로 인해 전통적인 단위 테스트 접근 방식이 맞지 않으며, 응답 포맷 검증과 통합 테스트 수준으로 범위를 설정하는 것이 현실적임을 확인
 
 ---
 

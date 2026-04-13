@@ -14,9 +14,9 @@ stack:
 summary: "에프엔바이오 제조 현장의 원부자재 입출고, 생산, 칭량 관리 등을 지원하는 내부용 MES 시스템"
 problem: "제조 현장의 원부자재 입출고, 생산 관리, 칭량 기록 등을 시스템으로 관리 필요"
 result:
-  - "BOM 기반 원료 소진과 생산 데이터 자동 연계 구현"
-  - "동료와 역할 분담을 통한 협업 경험"
-  - "제조 도메인 기반 MES 기능 구현"
+  - "생산 실적 저장 시 BOM 기반 원료 소진을 단일 트랜잭션으로 묶어 재고 데이터 정합성 보장"
+  - "API 경계 기준 역할 분리로 LOT 추적 모듈과 MES 코어 로직을 독립 개발·통합"
+  - "칭량 기록서 시스템화로 제조 현장 품질 추적성(Traceability) 확보"
 featured: false
 ---
 
@@ -43,32 +43,146 @@ featured: false
 
 ## 구현 포인트
 
-### 1. 제조 도메인 기반 MES 핵심 기능
+### 1. BOM 기반 원료 소진 — 트랜잭션으로 데이터 정합성 보장
 
-원부자재 입출고, 제품 생산, 칭량 기록서, 수율 계산 등 제조 현장의 주요 업무 흐름을 시스템으로 구현했습니다.
+생산 실적을 저장할 때 BOM에 정의된 투입 원료를 자동으로 차감하는 것이 핵심 요구사항이었다. 생산 실적 저장과 원료 재고 차감을 별도 요청으로 분리하면 네트워크 오류나 중간 예외 발생 시 생산 기록은 남아 있지만 재고는 차감되지 않는 불일치 상태가 생긴다. 두 작업을 단일 트랜잭션으로 묶어 이 문제를 구조적으로 방지했다.
 
-**BOM 기반 원료 소진 연계**
+```java
+@Service
+public class ProductionService {
 
-BOM(Bill of Materials) 정보를 기반으로 원료 소진과 생산 데이터를 자동으로 연계하여, 현장 데이터의 일관성과 무결성을 확보했습니다.
+    @Transactional
+    public void recordProduction(ProductionRequest request) {
+        // 1. 생산 실적 저장
+        Production production = productionRepository.save(
+            Production.of(request.getProductId(), request.getQuantity())
+        );
 
-**칭량 기록서 관리**
+        // 2. BOM 조회 — 이 제품 생산에 필요한 원료 목록
+        List<BomItem> bomItems = bomRepository.findByProductId(request.getProductId());
 
-제조 현장에서 필수적인 칭량(계량) 기록서를 시스템으로 관리하여, 품질 추적성을 확보했습니다.
+        // 3. 원료별 소진량 계산 및 재고 차감
+        // 트랜잭션 내부이므로 중간 실패 시 1번 실적과 함께 전체 롤백
+        bomItems.forEach(item -> {
+            int consumedQty = item.getUnitConsumption() * request.getQuantity();
+            inventoryService.deductStock(item.getMaterialId(), consumedQty);
+        });
+    }
+}
+```
 
-### 2. 협업 기반 역할 분리
+```java
+@Service
+public class InventoryService {
 
-LOT 기반 추적 로직과 태블릿 UI는 동료가 담당하고, MES 전반 기능과 PC 기반 관리자 화면, 핵심 비즈니스 로직을 담당했습니다.
+    @Transactional(propagation = Propagation.MANDATORY)
+    // MANDATORY: 반드시 기존 트랜잭션 내에서 호출되어야 함
+    // 단독 호출 시 예외 발생 → 재고 차감이 생산 실적 없이 실행되는 상황 방지
+    public void deductStock(Long materialId, int quantity) {
+        Inventory inventory = inventoryRepository.findByMaterialId(materialId)
+            .orElseThrow(() -> new IllegalStateException("재고 정보 없음: " + materialId));
 
-역할을 명확히 분리한 협업을 통해 전체 시스템 완성도를 높였습니다.
+        if (inventory.getQuantity() < quantity) {
+            throw new InsufficientStockException(materialId, quantity);
+        }
+        inventory.deduct(quantity);
+    }
+}
+```
+
+### 2. 협업 API 경계 설계
+
+동료는 LOT 기반 추적 로직과 태블릿 UI, 나는 MES 코어 로직과 PC 관리자 화면을 담당했다. 두 영역이 겹치지 않으면서도 연동될 수 있도록 API 경계를 명확히 정의하는 것이 협업의 핵심이었다.
+
+| 담당 | 책임 영역 | 노출 API |
+|---|---|---|
+| 동료 | LOT 생성·추적, 태블릿 UI | `POST /lots`, `GET /lots/{id}/trace` |
+| 나 | 생산 실적, BOM 연계, 재고, 칭량 | `POST /productions`, `GET /inventory`, `POST /weighing` |
+
+LOT 정보가 생산 실적에 연결되어야 하는 지점에서 동료가 제공하는 LOT ID를 내 `ProductionRequest`에 포함시키는 방식으로 의존성 방향을 단방향으로 유지했다. 서로의 내부 구현을 모르더라도 API 계약만으로 독립 개발 후 통합이 가능했다.
+
+### 3. 칭량 기록서 — 품질 추적성(Traceability) 구조
+
+칭량 기록서는 어떤 작업자가, 언제, 어떤 원료를, 얼마나 계량했는지를 기록하는 제조 품질 관리의 핵심 문서다. 수기 기록은 누락·오기 리스크가 있어 시스템에서 필수 필드를 강제하고 저장 시 타임스탬프와 작업자 정보를 자동으로 주입했다.
+
+```java
+@Entity
+public class WeighingRecord {
+    private Long materialId;
+    private BigDecimal plannedWeight;   // BOM 기준 계획량
+    private BigDecimal actualWeight;    // 실제 칭량값
+    private Long operatorId;            // 작업자 (자동 주입)
+    private LocalDateTime recordedAt;   // 기록 시각 (자동 주입)
+
+    // 계획량 대비 편차율 — 품질 이상 감지 기준으로 활용
+    public BigDecimal getDeviationRate() {
+        return actualWeight.subtract(plannedWeight)
+            .divide(plannedWeight, 4, RoundingMode.HALF_UP)
+            .multiply(BigDecimal.valueOf(100));
+    }
+}
+
+---
+
+## 테스트 용이성 설계
+
+### ProductionService — 트랜잭션 경계 단위 테스트
+
+`@Transactional` 경계가 올바르게 동작하는지, 즉 재고 부족 예외 발생 시 생산 실적도 함께 롤백되는지를 검증하는 것이 핵심이다.
+
+```java
+@SpringBootTest
+@Transactional
+class ProductionServiceTest {
+
+    @Autowired ProductionService productionService;
+    @Autowired ProductionRepository productionRepository;
+    @Autowired InventoryRepository inventoryRepository;
+
+    @Test
+    @DisplayName("재고 부족 시 생산 실적과 원료 차감이 모두 롤백된다")
+    void rollback_production_when_stock_insufficient() {
+        // given: 재고가 5개인 원료 세팅
+        inventoryRepository.save(Inventory.of(materialId, 5));
+        // BOM: 이 제품 1개 생산에 원료 10개 필요
+        bomRepository.save(BomItem.of(productId, materialId, 10));
+
+        // when & then: 재고 부족으로 예외 발생
+        assertThatThrownBy(() ->
+            productionService.recordProduction(new ProductionRequest(productId, 1))
+        ).isInstanceOf(InsufficientStockException.class);
+
+        // then: 생산 실적도 저장되지 않아야 함 (트랜잭션 롤백 검증)
+        assertThat(productionRepository.findAll()).isEmpty();
+    }
+}
+```
+
+### InventoryService — `Propagation.MANDATORY` 설계 검증
+
+`deductStock()`이 트랜잭션 없이 단독 호출되는 상황을 방지하는 것이 `MANDATORY` 전파 설정의 목적이다. 이 제약을 테스트로 명문화하면 향후 잘못된 직접 호출을 사전에 차단할 수 있다.
+
+```java
+@Test
+@DisplayName("트랜잭션 없이 deductStock을 직접 호출하면 예외가 발생한다")
+void throw_when_deductStock_called_without_transaction() {
+    // given: 트랜잭션 컨텍스트 없는 상태
+
+    // when & then: MANDATORY 전파로 인해 IllegalTransactionStateException 발생
+    assertThatThrownBy(() ->
+        inventoryService.deductStock(materialId, 5)
+    ).isInstanceOf(IllegalTransactionStateException.class);
+}
+```
 
 ---
 
 ## 결과
 
-### 정성적 성과
-- 제조 도메인 기반 MES 핵심 기능 구현
-- BOM 기반 원료 소진과 생산 데이터 자동 연계
-- 협업을 통한 역할 분담 경험
+### 구조적 성과
+- **데이터 정합성 보장**: 생산 실적 저장과 BOM 기반 원료 차감을 단일 트랜잭션으로 묶어, 중간 실패 시 재고 불일치 상태 발생 원천 차단
+- **품질 추적성 확보**: 칭량 기록서에 작업자·시각·편차율을 시스템이 자동 주입 — 수기 기록의 누락·오기 리스크 제거
+- **독립 개발·통합 검증**: API 경계 기준 역할 분리로 LOT 추적 모듈과 MES 코어 로직을 독립 개발 후 통합 성공 — 내부 구현을 몰라도 API 계약만으로 협업 가능함을 확인
 
 ---
 

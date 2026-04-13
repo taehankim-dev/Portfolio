@@ -13,9 +13,9 @@ stack:
 summary: "스마트팜 고객이 일자별 작업 내역을 기록하고 향후 AI 분석을 위한 데이터를 수집하는 영농 기록 시스템"
 problem: "농장 현장에서 모바일로 작업을 기록하고 AI 분석에 활용할 데이터 수집 체계 필요"
 result:
-  - "HEIC 이미지 자동 변환 및 클라이언트 이미지 압축으로 모바일 환경 최적화"
-  - "향후 AI 확장을 고려한 데이터 구조 설계 경험"
-  - "내부 테스트 후 운영 확장 중단"
+  - "HEIC 변환·이미지 압축을 클라이언트에서 처리 → 서버 변환 부하 원천 차단 및 업로드 트래픽 감소"
+  - "정형 컬럼 + JSON 메타데이터 분리 구조로 AI 분석 확장 시 스키마 변경 없이 데이터 수집 가능"
+  - "내부 테스트 완료 — 운영 기준 미합의로 확장 보류, 기술 구현과 운영 표준화의 선후관계 재확인"
 featured: false
 ---
 
@@ -42,34 +42,139 @@ featured: false
 
 ## 구현 포인트
 
-### 1. 모바일 환경 최적화
+### 1. HEIC 변환·이미지 압축 — 클라이언트 처리 선택 근거
 
-농장 현장에서 사용하기 편리하도록 모바일 환경에 최적화했습니다.
+**선택지 비교**:
 
-**HEIC 이미지 자동 변환**
-- iOS 기본 카메라 포맷인 HEIC를 웹 호환 포맷으로 자동 변환
-- 업로드 전 클라이언트 사이드에서 JPG로 변환 처리
+| 방안 | 장점 | 단점 | 선택 |
+|---|---|---|---|
+| 서버에서 변환 | 클라이언트 처리 없음 | 원본 HEIC(수 MB) 업로드 → 서버 CPU 부하 + 느린 전송 | ❌ |
+| **클라이언트에서 변환 후 업로드** | 압축된 JPG만 서버 전송 → 트래픽·부하 동시 감소 | 클라이언트 처리 시간 발생 | ✅ |
 
-**클라이언트 사이드 이미지 압축**
-- 현장에서 촬영한 고해상도 이미지를 업로드 전 압축
-- 모바일 데이터 사용량 감소 및 업로드 속도 개선
+농장 현장은 모바일 네트워크 환경이 불안정한 경우가 많다. 원본 HEIC 파일(평균 3 ~ 5MB)을 그대로 업로드하면 전송 실패 가능성이 높고 서버 변환 처리도 누적된다. 변환과 압축을 업로드 전 클라이언트에서 완료하면 실제 전송 파일 크기를 300~500KB 수준으로 줄일 수 있어 불안정한 네트워크에서도 업로드 성공률이 높아진다.
 
-**터치 친화적 UI**
-- 농장 현장에서 장갑을 끼고도 사용 가능한 터치 영역 설계
-- Capacitor를 활용한 하이브리드 앱으로 구현
+```typescript
+async function processImageBeforeUpload(file: File): Promise<File> {
+  // HEIC 감지 및 JPG 변환
+  const converted = file.type === 'image/heic'
+    ? await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 })
+    : file;
 
-### 2. AI 확장을 고려한 데이터 구조
+  // 변환된 파일 압축 (Canvas API 활용)
+  const compressed = await compressImage(converted as File, {
+    maxSizeMB: 0.5,      // 최대 500KB
+    maxWidthOrHeight: 1280,
+    useWebWorker: true,  // 메인 스레드 블로킹 방지
+  });
 
-향후 AI 분석 및 자동화 확장을 고려한 데이터 구조를 설계했습니다.
+  return compressed;
+}
+```
+
+**터치 친화적 UI**: Capacitor를 활용한 하이브리드 앱으로 구현, 장갑을 끼고도 조작 가능하도록 터치 영역(최소 44px) 기준 적용
+
+### 2. AI 확장을 고려한 데이터 구조 설계
+
+향후 AI 분석에 데이터를 활용하려면 수집 시점의 스키마 설계가 중요하다. 모든 작업 유형을 하나의 테이블에 고정 컬럼으로 관리하면 작업 유형이 추가될 때마다 스키마 변경이 필요해 기존 데이터와의 호환성 문제가 생긴다.
+
+**정형 컬럼 + JSON 메타데이터 분리 전략**:
+
+```sql
+CREATE TABLE farming_records (
+  id          BIGSERIAL PRIMARY KEY,
+  farm_id     BIGINT NOT NULL,
+  recorded_at DATE NOT NULL,
+  work_type   VARCHAR(50) NOT NULL,   -- 'WATERING', 'FERTILIZING', 'HARVESTING' 등
+
+  -- 공통 정형 필드: AI 분석 시 필터·집계 기준으로 활용
+  temperature DECIMAL(4,1),
+  humidity    DECIMAL(4,1),
+  weather     VARCHAR(20),
+
+  -- 작업 유형별 가변 데이터: 스키마 변경 없이 확장 가능
+  -- 예: { "amount": "200ml", "fertilizer_type": "질소" }
+  extra_data  JSONB,
+
+  memo        TEXT,
+  image_urls  TEXT[],
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+-- AI 분석용 인덱스: 농장별 날짜 범위 조회 최적화
+CREATE INDEX idx_farming_records_farm_date
+  ON farming_records(farm_id, recorded_at DESC);
+```
+
+이 구조로 신규 작업 유형이 추가되어도 `work_type` 값과 `extra_data` 키만 추가하면 되고, 기존 레코드는 영향받지 않는다. AI 모델이 학습할 때 `temperature`, `humidity` 같은 공통 피처는 정형 컬럼에서, 작업별 세부 데이터는 `extra_data`에서 추출하는 방식으로 분리된다.
+
+---
+
+## 테스트 용이성 설계
+
+### 이미지 처리 로직 — 파일 시스템 없이 단위 테스트
+
+`processImageBeforeUpload()`는 `File` 객체를 입력받아 압축된 `File`을 반환하는 구조다. 실제 파일 시스템이나 카메라 API 없이 `File` 객체를 직접 생성해 테스트할 수 있다.
+
+```typescript
+describe('processImageBeforeUpload', () => {
+
+  it('HEIC 파일은 JPEG로 변환된다', async () => {
+    // given: HEIC 타입 Mock 파일
+    const heicFile = new File(['dummy'], 'photo.heic', { type: 'image/heic' });
+
+    // when
+    const result = await processImageBeforeUpload(heicFile);
+
+    // then: 변환 후 JPEG 타입
+    expect(result.type).toBe('image/jpeg');
+  });
+
+  it('압축 후 파일 크기가 500KB 이하가 된다', async () => {
+    // given: 1MB 초과 Mock 이미지 파일
+    const largeImageBlob = new Blob([new Uint8Array(1024 * 1024)], { type: 'image/jpeg' });
+    const largeFile = new File([largeImageBlob], 'large.jpg', { type: 'image/jpeg' });
+
+    // when
+    const result = await processImageBeforeUpload(largeFile);
+
+    // then
+    expect(result.size).toBeLessThanOrEqual(500 * 1024);
+  });
+});
+```
+
+### DB 스키마 — JSONB 구조의 작업 유형별 데이터 격리 검증
+
+`extra_data` JSONB 컬럼의 키 구조가 작업 유형별로 일관성 있게 유지되는지를 Repository 단위 테스트로 검증할 수 있다.
+
+```java
+@DataJpaTest
+class FarmingRecordRepositoryTest {
+
+    @Test
+    @DisplayName("작업 유형별 extra_data 키가 정의된 스키마를 따른다")
+    void extra_data_follows_schema_by_work_type() {
+        FarmingRecord record = FarmingRecord.builder()
+            .workType("FERTILIZING")
+            .extraData(Map.of("amount", "200ml", "fertilizerType", "질소"))
+            .build();
+
+        FarmingRecord saved = repository.save(record);
+
+        assertThat(saved.getExtraData()).containsKey("amount");
+        assertThat(saved.getExtraData()).containsKey("fertilizerType");
+    }
+}
+```
 
 ---
 
 ## 결과
 
-### 정성적 성과
-- 내부 테스트 단계 완료
-- 모바일 최적화 환경 구성 경험
-- AI 확장을 고려한 데이터 구조 설계 경험 축적
+### 구조적 성과
+- **서버 부하 원천 차단**: HEIC 변환·압축을 클라이언트에서 완료 후 업로드 — 원본 파일(3 ~ 5MB) 대신 압축 파일(300~500KB)만 서버에 전달, 불안정한 농장 네트워크 환경에서 업로드 성공률 향상
+- **AI 확장 구조 확보**: 정형 컬럼 + JSONB 분리로 신규 작업 유형 추가 시 스키마 변경 없이 수용 — 수집 시점부터 AI 피처 추출을 고려한 인덱스 설계
+- **기술과 운영의 선후관계 재확인**: 기술 구현은 완료했으나 운영 기준(작업 유형 표준화, 입력 규칙) 미합의로 확장 보류 — 스마트팜 견적 시스템 2차와 동일한 패턴 재확인
 
 ---
 

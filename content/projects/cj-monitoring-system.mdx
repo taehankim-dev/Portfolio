@@ -11,9 +11,9 @@ stack:
 summary: "JSP 기반 레거시 모니터링 시스템을 Vue.js로 전환하여 유지보수성 및 성능 개선"
 problem: "레거시 JSP 시스템의 유지보수 어려움, API 호출 과다로 인한 성능 저하"
 result:
-  - "API 호출 최적화(throttle 적용)로 페이지 로딩 성능 개선"
-  - "Vue.js 전환으로 유지보수성 향상"
-  - "데이터 시각화 개선 및 DB 쿼리 정합성 문제 해결"
+  - "폴링 간격 1초 → 5초 조정으로 API 호출 빈도 80% 감소 — 모니터링 요구사항 유지하며 서버 부하 제어"
+  - "JSP+jQuery → Vue.js 컴포넌트 구조 전환으로 중복 코드 제거 및 유지보수 경계 확보"
+  - "DB 쿼리 집계 기준 불일치 수정으로 대시보드 수치와 실제 데이터 정합성 확보"
 featured: false
 ---
 
@@ -42,38 +42,65 @@ featured: false
 
 ### 1. API 호출 과다
 
-**현상**: 모니터링 대시보드에서 1-2초마다 API를 호출하면서 서버 부하 증가
+**현상**: 모니터링 대시보드에서 1~2초마다 API를 호출하면서 서버 부하 증가
 
-**해결**:
+**원인 분석**: 폴링 간격을 짧게 설정한 이유는 "실시간에 가깝게 보여야 한다"는 요구사항이었으나, 실제로는 공장 설비 상태가 수 초 단위로 급변하지 않기 때문에 1초 갱신이 필요한 상황이 아니었다.
 
-Throttle을 적용하여 API 호출 간격을 5초로 조정하고 불필요한 요청을 제거했습니다.
+**선택지 비교**:
+
+| 방안 | 적합성 | 판단 |
+|---|---|---|
+| WebSocket | 진짜 실시간 필요 시 적합, 서버 연결 유지 비용 발생 | ❌ 현재 요구사항에 과도 |
+| SSE(Server-Sent Events) | 단방향 실시간 스트리밍, 레거시 시스템 호환 어려움 | ❌ 기존 JSP 구조와 충돌 |
+| **폴링 간격 조정** | 기존 구조 유지, 간격 기준만 업무 특성에 맞게 조정 | ✅ |
+
+**간격 5초 결정 근거**: 설비 상태 이상 감지는 담당자가 확인 후 대응하는 구조였기 때문에 수 초 단위의 즉각 반응이 필요한 환경이 아니었다. 5초는 업무 요구사항(이상 감지 지연 허용 범위)과 서버 부하 감소 사이의 균형점으로 현장 담당자와 합의한 기준이다.
 
 ```typescript
-// After: Vue.js + throttle
 import { throttle } from 'lodash-es';
 
+// throttle: 연속 호출 시 마지막 호출 시점 기준 5초 대기
+// setInterval과 함께 사용해 주기적 갱신도 보장
 const fetchMonitoringData = throttle(async () => {
   try {
     const response = await fetch('/api/monitoring/status');
-    const data = await response.json();
-    monitoringData.value = data;
+    monitoringData.value = await response.json();
   } catch (error) {
-    console.error('Failed to fetch data:', error);
+    console.error('모니터링 데이터 조회 실패:', error);
   }
-}, 5000);  // 5초로 간격 증가
+}, 5000);
 
 onMounted(() => {
-  fetchMonitoringData();
-  setInterval(fetchMonitoringData, 5000);
+  fetchMonitoringData();               // 즉시 1회 실행
+  setInterval(fetchMonitoringData, 5000); // 이후 5초 주기 유지
 });
 ```
 
 **결과**:
-- API 호출 빈도 감소 (1초 → 5초)
-- 서버 부하 약 80% 감소
-- 페이지 로딩 성능 개선
+- API 호출 횟수 1/5 감소 (1초 → 5초 기준, 분당 60회 → 12회)
+- 서버 부하 감소 — 동일 모니터링 품질 유지하면서 불필요한 요청 제거
+- 향후 간격 조정이 필요할 경우 상수 하나만 변경하면 되는 구조
 
-### 2. 레거시 코드 개선 - Vue.js 전환
+### 2. DB 쿼리 정합성 문제
+
+**현상**: 대시보드에 표시되는 집계 수치(설비별 가동률, 불량 건수 등)가 실제 데이터와 맞지 않는 경우가 발생
+
+**원인**: 여러 화면에서 동일한 데이터를 집계하는 쿼리가 제각각 작성되어 있었고, 집계 기준(시간 범위, 상태값 분류)이 쿼리마다 달랐다.
+
+```sql
+-- 문제: 화면 A와 화면 B가 서로 다른 기준으로 가동률을 집계
+-- 화면 A: status = 'RUNNING'만 포함
+SELECT COUNT(*) FROM equipment WHERE status = 'RUNNING'
+
+-- 화면 B: status IN ('RUNNING', 'IDLE')을 가동으로 포함
+SELECT COUNT(*) FROM equipment WHERE status IN ('RUNNING', 'IDLE')
+```
+
+**해결**: 집계 기준을 단일 뷰(View) 또는 공통 쿼리로 일원화하여 화면마다 다르게 해석되던 집계 로직을 통일했다.
+
+**결과**: 대시보드 수치와 실제 DB 데이터 정합성 확보 — 담당자가 수치를 신뢰할 수 있는 기준 마련
+
+### 3. 레거시 코드 개선 — Vue.js 전환
 
 JSP + jQuery 기반 코드를 Vue.js 컴포넌트 기반 구조로 전환하여 유지보수성을 높였습니다.
 
@@ -109,17 +136,44 @@ onMounted(async () => {
 
 ---
 
+## 테스트 용이성 설계
+
+### 폴링 로직 — 순수 함수 분리로 간격 기준 단위 테스트
+
+`fetchMonitoringData` 자체는 API 호출을 포함하므로 단위 테스트가 어렵지만, throttle 간격 설정값과 실제 호출 횟수의 관계는 mock 타이머를 이용해 검증할 수 있다. Vue 컴포넌트 마운트 없이 순수 타이머 동작만 격리해 테스트하는 것이 핵심이다.
+
+```typescript
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { throttle } from 'lodash-es';
+
+describe('모니터링 폴링 간격 검증', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('5초 간격 throttle 적용 시 10초 동안 최대 2회만 호출된다', () => {
+    const mockFetch = vi.fn();
+    const throttled = throttle(mockFetch, 5000);
+
+    // 1초마다 10번 호출 시도
+    for (let i = 0; i < 10; i++) {
+      throttled();
+      vi.advanceTimersByTime(1000);
+    }
+
+    // throttle 적용으로 실제 호출은 2회 이하
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});
+```
+
+---
+
 ## 결과
 
-### 정량적 성과
-- API 호출 빈도: 1초 → 5초 (80% 감소)
-- 페이지 로딩 속도: 약 30% 개선
-- 코드 라인 수: JSP 대비 40% 감소 (컴포넌트화)
-
-### 정성적 성과
-- Vue.js 기반 모던 프론트엔드로 전환
-- 유지보수성 향상
-- 데이터 시각화로 모니터링 효율 개선
+### 구조적 성과
+- **폴링 최적화**: API 호출 횟수 분당 60회 → 12회 (1/5 감소) — 업무 요구사항(이상 감지 허용 지연)을 기준으로 간격을 결정하여 모니터링 품질 유지하면서 서버 부하 제어
+- **데이터 정합성 확보**: 화면마다 다르게 작성된 집계 쿼리를 기준 일원화 — 대시보드 수치에 대한 신뢰도 확보
+- **유지보수 구조 확보**: JSP 전역 스크립트 → Vue.js 컴포넌트 경계로 전환 — 기능별 수정 범위가 컴포넌트 단위로 명확해짐
 
 ---
 
