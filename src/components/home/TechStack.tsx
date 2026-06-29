@@ -1,31 +1,43 @@
-import { Badge } from '@/components/common/Badge';
-
-const techStacks = {
-    'Frontend': ['Next.js', 'Vue 3', 'TypeScript', 'Tailwind CSS', 'Capacitor'],
-    'Backend': ['Java', 'Spring Boot', 'Node.js', 'PostgreSQL'],
-    'Data & Infra': ['MQTT', 'Docker', 'Nginx', 'pm2'],
-    'Collaboration': ['Git', 'GitHub', 'Notion'],
-};
+const techCategories = [
+    {
+        label: 'Frontend',
+        techs: ['Next.js', 'React', 'Vue.js (Vue 3)', 'TypeScript', 'Tailwind CSS', 'Pinia', 'Vite', 'Chart.js'],
+    },
+    {
+        label: 'Backend',
+        techs: ['Java', 'Spring Boot', 'Spring Data JPA', 'Spring Security', 'MyBatis', 'Python', 'FastAPI'],
+    },
+    {
+        label: 'Data & Infra',
+        techs: ['PostgreSQL', 'Docker', 'Nginx', 'Flyway', 'pm2'],
+    },
+    {
+        label: 'Collaboration',
+        techs: ['Git', 'GitHub', 'Notion'],
+    },
+];
 
 export function TechStack() {
     return (
-        <section className="mb-24">
-            <h2 className="text-3xl font-bold mb-8 text-gray-900">기술 스택</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {Object.entries(techStacks).map(([category, techs]) => (
-                    <div key={category}>
-                        <h3 className="text-lg font-semibold mb-3 text-gray-700">
-                            {category}
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                            {techs.map(tech => (
-                                <Badge key={tech}>{tech}</Badge>
-                            ))}
-                        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+            {techCategories.map(({ label, techs }) => (
+                <div
+                    key={label}
+                    className="bg-white p-5 flex flex-col h-full"
+                    style={{ borderRadius: '22px' }}
+                >
+                    <span className="text-[11px] font-bold tracking-wider text-blue-600 block mb-3 uppercase">
+                        {label}
+                    </span>
+                    <div className="flex flex-col gap-1.5">
+                        {techs.map(tech => (
+                            <span key={tech} className="text-xs text-slate-600 leading-relaxed font-medium">
+                                {tech}
+                            </span>
+                        ))}
                     </div>
-                ))}
-            </div>
-        </section>
+                </div>
+            ))}
+        </div>
     );
 }

@@ -3,7 +3,7 @@ import { getProjectsByExperience } from '@/lib/projects';
 import { ExperienceSection } from '@/components/projects/ExperienceSection';
 
 export const metadata: Metadata = {
-    title: '프로젝트 | 4년차 백엔드 개발자 김태한의 포트폴리오',
+    title: '프로젝트 | 소프트웨어 엔지니어 김태한의 포트폴리오',
     description: '재직 경험별 프로젝트 케이스 스터디',
 };
 

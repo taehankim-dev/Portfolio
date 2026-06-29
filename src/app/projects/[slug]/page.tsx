@@ -19,11 +19,12 @@ export async function generateMetadata(
 ): Promise<Metadata> {
     const { slug } = await params;
     const project = await getProjectBySlug(slug);
+    const { summary, thumbnail } = project.frontmatter;
     return {
-        title: `${project.frontmatter.title} | 포트폴리오`,
-        description: project.frontmatter.summary,
+        title: `${project.frontmatter.title} | 김태한의 포트폴리오`,
+        description: Array.isArray(summary) ? summary[0] : summary,
         openGraph: {
-            images: project.frontmatter.thumbnail ? [project.frontmatter.thumbnail] : [],
+            images: thumbnail ? [thumbnail] : [],
         },
     };
 }
@@ -62,11 +63,16 @@ export default async function ProjectPage(
     const { frontmatter, content } = project;
     const headings = extractHeadings(content);
 
+    // Problem 문자열을 ' / ' 또는 ' - ' 기준으로 분절하여 리스트화
+    const problemItems = frontmatter.problem
+        .split(/ \/ | - /)
+        .map(s => s.trim())
+        .filter(Boolean);
+
     return (
         <div className="space-y-4 pb-24 lg:pb-8">
 
             {/* ── 헤더 + 바디 + TOC를 하나의 flex로 묶음 ──────────────── */}
-            {/* 헤더와 바디가 동일한 flex-1 컬럼에 있어 너비 일치 */}
             <div className="flex gap-4 items-start">
 
                 {/* 왼쪽 컬럼: 헤더 카드 + 바디 카드 (동일 너비) */}
@@ -86,18 +92,28 @@ export default async function ProjectPage(
                         </Link>
 
                         {/* 제목 */}
-                        <h1 className="text-2xl font-bold text-gray-900 leading-snug mb-3 tracking-tight">
+                        <h1 className="text-2xl font-bold text-gray-900 leading-snug mb-3 tracking-tight break-keep">
                             {frontmatter.title}
                         </h1>
 
-                        {/* 메타 정보 */}
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 mb-6">
+                        {/* 메타 정보: 회사명 · 기간 (역할은 하단 분리) */}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 mb-5">
                             <span>{frontmatter.company}</span>
                             <span>·</span>
                             <span>{frontmatter.period}</span>
-                            <span>·</span>
-                            <span>{frontmatter.role.join(', ')}</span>
                         </div>
+
+                        {/* 역할 수직 리스트 */}
+                        {frontmatter.role && frontmatter.role.length > 0 && (
+                            <ul className="flex flex-col gap-1 mb-6">
+                                {frontmatter.role.map((r, i) => (
+                                    <li key={i} className="flex items-start gap-1.5 text-xs text-gray-600 break-keep">
+                                        <span className="text-gray-300 shrink-0 mt-px">·</span>
+                                        <span>{r}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
 
                         {/* 기술 스택 뱃지 */}
                         <div className="flex flex-wrap gap-1.5 mb-8">
@@ -106,29 +122,34 @@ export default async function ProjectPage(
                             ))}
                         </div>
 
-                        {/* 문제 / 성과 요약 카드 */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* 문제 / 성과 요약 패널 — items-stretch로 높이 대칭 */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
                             <div
-                                className="bg-gray-50 px-5 py-4"
+                                className="bg-gray-50 px-5 py-4 flex flex-col"
                                 style={{ borderRadius: '16px' }}
                             >
-                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">
                                     Problem
                                 </p>
-                                <p className="text-sm text-gray-700 leading-relaxed">
-                                    {frontmatter.problem}
-                                </p>
+                                <ul className="space-y-1.5">
+                                    {problemItems.map((item, i) => (
+                                        <li key={i} className="text-sm text-gray-700 leading-relaxed flex gap-2 break-keep">
+                                            <span className="text-gray-400 shrink-0 mt-0.5">→</span>
+                                            <span>{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
                             <div
-                                className="bg-gray-900 px-5 py-4"
+                                className="bg-gray-900 px-5 py-4 flex flex-col"
                                 style={{ borderRadius: '16px' }}
                             >
-                                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">
+                                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2.5">
                                     Result
                                 </p>
                                 <ul className="space-y-1.5">
                                     {frontmatter.result.map((r, i) => (
-                                        <li key={i} className="text-sm text-gray-200 leading-relaxed flex gap-2">
+                                        <li key={i} className="text-sm text-gray-200 leading-relaxed flex gap-2 break-keep">
                                             <span className="text-gray-500 shrink-0 mt-0.5">→</span>
                                             <span>{r}</span>
                                         </li>
@@ -140,7 +161,7 @@ export default async function ProjectPage(
 
                     {/* ── Body Card ─────────────────────────────────────── */}
                     <div
-                        className="bg-white px-4 sm:px-8 py-10 shadow-sm overflow-x-hidden break-keep"
+                        className="bg-white px-4 sm:px-8 py-10 shadow-sm prose prose-slate max-w-none break-keep prose-h2:mt-10 prose-h2:mb-4 prose-h3:mt-8 prose-h3:mb-3 prose-p:leading-relaxed"
                         style={{ borderRadius: '28px' }}
                     >
                         <MDXRemote

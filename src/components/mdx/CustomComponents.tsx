@@ -1,57 +1,58 @@
+function makeId(children: React.ReactNode): string {
+    const text = typeof children === 'string' ? children : String(children ?? '');
+    return text
+        .toLowerCase()
+        .replace(/[^a-z0-9가-힣\s]/g, '')
+        .trim()
+        .replace(/\s+/g, '-');
+}
+
 export const mdxComponents = {
-    // ─── H2: 카드 섹션 헤더 (id 자동 생성 → TOC anchor) ───────────────────
-    h2: ({ children, ...props }: any) => {
-        const text = typeof children === 'string' ? children : String(children ?? '');
-        const id = text
-            .toLowerCase()
-            .replace(/[^a-z0-9가-힣\s]/g, '')
-            .trim()
-            .replace(/\s+/g, '-');
+    // ─── H1: 페이지 최상단 메인 타이틀 ────────────────────────────────
+    h1: ({ children, ...props }: any) => (
+        <h1
+            className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug mb-6 break-keep scroll-mt-24"
+            {...props}
+        >
+            {children}
+        </h1>
+    ),
 
-        return (
-            <h2
-                id={id}
-                className="text-lg font-semibold text-gray-800 pt-10 pb-2 border-b border-gray-100 mb-6 scroll-mt-24 tracking-tight"
-                {...props}
-            >
-                {children}
-            </h2>
-        );
-    },
+    // ─── H2: 대단원 분류 헤더 (id 자동 생성 → TOC anchor) ──────────────
+    h2: ({ children, ...props }: any) => (
+        <h2
+            id={makeId(children)}
+            className="text-xl font-bold text-slate-900 mt-16 mb-6 pb-2.5 border-b-2 border-slate-200/80 block break-keep tracking-tight scroll-mt-24"
+            {...props}
+        >
+            {children}
+        </h2>
+    ),
 
-    // ─── H3: 서브섹션 ────────────────────────────────────────────────────
-    h3: ({ children, ...props }: any) => {
-        const text = typeof children === 'string' ? children : String(children ?? '');
-        const id = text
-            .toLowerCase()
-            .replace(/[^a-z0-9가-힣\s]/g, '')
-            .trim()
-            .replace(/\s+/g, '-');
-
-        return (
-            <h3
-                id={id}
-                className="text-sm font-semibold text-gray-700 mt-8 mb-3 scroll-mt-24 tracking-tight"
-                {...props}
-            >
-                {children}
-            </h3>
-        );
-    },
+    // ─── H3: 소단원 케이스 스터디 헤더 ──────────────────────────────────
+    h3: ({ children, ...props }: any) => (
+        <h3
+            id={makeId(children)}
+            className="text-base sm:text-lg font-bold text-slate-800 mt-10 mb-4 pb-2 border-b border-slate-100 block break-keep tracking-tight scroll-mt-24"
+            {...props}
+        >
+            {children}
+        </h3>
+    ),
 
     // ─── Blockquote: Overview Callout ────────────────────────────────────
     blockquote: ({ children }: any) => (
         <div className="relative bg-gray-50 border border-gray-200 rounded-2xl px-6 py-5 my-6 not-prose">
             <div className="flex gap-3">
                 <span className="text-gray-400 text-base mt-0.5 shrink-0">📋</span>
-                <div className="text-sm text-gray-700 leading-relaxed space-y-2">
+                <div className="text-sm text-gray-700 leading-relaxed space-y-2 break-keep">
                     {children}
                 </div>
             </div>
         </div>
     ),
 
-    // ─── HR: 섹션 구분선 (카드 내에서 얇게) ─────────────────────────────
+    // ─── HR: 섹션 구분선 ─────────────────────────────────────────────────
     hr: () => (
         <hr className="my-6 border-gray-100" />
     ),
@@ -75,7 +76,7 @@ export const mdxComponents = {
         </ol>
     ),
     li: ({ children }: any) => (
-        <li className="text-sm text-gray-700 leading-relaxed flex gap-2">
+        <li className="text-sm text-gray-700 leading-relaxed flex gap-2 break-keep">
             <span className="text-gray-300 mt-1 shrink-0">•</span>
             <span>{children}</span>
         </li>
@@ -87,24 +88,26 @@ export const mdxComponents = {
     ),
 
     // ─── Table: 트레이드오프 비교표 스타일 ──────────────────────────────
-    table: (props: any) => (
-        <div className="overflow-x-auto my-6 rounded-xl border border-gray-200 shadow-sm not-prose">
-            <table className="min-w-full border-collapse text-sm" {...props} />
+    table: ({ children }: any) => (
+        <div className="w-full overflow-x-auto my-6 border border-slate-100 rounded-xl block break-keep not-prose">
+            <table className="w-full text-sm text-left text-slate-600 border-collapse">
+                {children}
+            </table>
         </div>
     ),
-    thead: (props: any) => <thead className="bg-gray-50" {...props} />,
+    thead: (props: any) => <thead className="bg-slate-50" {...props} />,
     tbody: (props: any) => <tbody {...props} />,
     tr: (props: any) => (
-        <tr className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors" {...props} />
+        <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors" {...props} />
     ),
     th: (props: any) => (
         <th
-            className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+            className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100"
             {...props}
         />
     ),
     td: (props: any) => (
-        <td className="px-4 py-3 text-sm text-gray-700 align-top break-keep" {...props} />
+        <td className="px-4 py-3 text-xs text-slate-600 align-top break-keep" {...props} />
     ),
 
     // ─── Code blocks (pre + code) ────────────────────────────────────────
@@ -114,12 +117,12 @@ export const mdxComponents = {
         return (
             <div className="relative my-5">
                 {language && (
-                    <span className="absolute top-3 right-3 text-[10px] font-mono text-gray-500 bg-gray-800 px-2 py-0.5 rounded select-none z-10 pointer-events-none">
+                    <span className="absolute top-3 right-3 text-[10px] font-mono text-gray-400 bg-slate-800 px-2 py-0.5 rounded select-none z-10 pointer-events-none">
                         {language}
                     </span>
                 )}
                 <pre
-                    className="bg-gray-950 text-gray-100 p-5 rounded-xl overflow-x-auto text-xs leading-relaxed [&_code]:bg-transparent [&_code]:p-0 [&_code]:text-inherit shadow-sm"
+                    className="bg-slate-900 text-slate-200 p-5 rounded-xl overflow-x-auto text-[13px] leading-relaxed [&_code]:bg-transparent [&_code]:p-0 [&_code]:text-inherit shadow-sm"
                     {...props}
                 >
                     {children}

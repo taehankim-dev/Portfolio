@@ -8,7 +8,8 @@ export const experiences: Experience[] = [
         start: '2026-01',
         end: '2026-02',
         title: '풀스택 개발자',
-        summary: '스마트팜 IoT 플랫폼 개발 및 견적 시스템 구축',
+        summary: '스마트팜 통합 관리 시스템 고도화 및 견적 시스템 구축',
+        note: '스마트팜 사업부 전산화 고도화 및 법인 전환에 따른 소속 이동',
         order: 1,
     },
     {

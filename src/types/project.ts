@@ -5,7 +5,7 @@ export interface ProjectFrontmatter {
     period: string;          // 프로젝트 기간 (예: "2025.09 - 2026.01")
     role: string[];
     stack: string[];
-    summary: string;
+    summary: string | string[];
     problem: string;
     result: string[];
     thumbnail?: string;

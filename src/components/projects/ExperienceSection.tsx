@@ -17,15 +17,17 @@ export function ExperienceSection({ experience, projects }: ExperienceSectionPro
             style={{ borderRadius: '28px' }}
         >
             {/* Experience Header */}
-            <div className="flex items-center gap-3 mb-6">
-                <h2 className="text-base font-semibold text-gray-900">{experience.company}</h2>
-                <span
-                    className="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-medium"
-                    style={{ borderRadius: '999px' }}
-                >
-                    {formatExperiencePeriod(experience)}
-                </span>
-                <span className="text-xs text-gray-400 ml-auto">{experience.title}</span>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-base font-semibold text-gray-900 break-keep">{experience.company}</h2>
+                    <span
+                        className="shrink-0 px-3 py-1 bg-gray-100 text-gray-500 text-xs font-medium"
+                        style={{ borderRadius: '999px' }}
+                    >
+                        {formatExperiencePeriod(experience)}
+                    </span>
+                </div>
+                <span className="text-xs text-gray-400">{experience.title}</span>
             </div>
 
             {experience.summary && (
@@ -33,7 +35,7 @@ export function ExperienceSection({ experience, projects }: ExperienceSectionPro
             )}
 
             {/* Projects Grid */}
-            <ProjectList projects={projects} />
+            <ProjectList projects={projects} variant="simple" />
         </section>
     );
 }

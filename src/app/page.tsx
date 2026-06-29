@@ -2,26 +2,7 @@ import Link from 'next/link';
 import { getProjectsByExperience } from '@/lib/projects';
 import { getRepresentativeProject } from '@/lib/home-helpers';
 import { ExperienceHighlight } from '@/components/home/ExperienceHighlight';
-import { CONTACT } from '@/lib/constants';
-
-const techCategories = [
-    {
-        label: 'Frontend',
-        techs: ['Next.js', 'Vue 3', 'TypeScript', 'Tailwind CSS', 'Capacitor'],
-    },
-    {
-        label: 'Backend',
-        techs: ['Spring Boot', 'Node.js', 'PostgreSQL'],
-    },
-    {
-        label: 'Data & Infra',
-        techs: ['MQTT', 'Docker', 'Nginx', 'pm2'],
-    },
-    {
-        label: 'Collaboration',
-        techs: ['Git', 'GitHub', 'Notion'],
-    },
-];
+import { TechStack } from '@/components/home/TechStack';
 
 export default function HomePage() {
     const experienceGroups = getProjectsByExperience();
@@ -33,13 +14,13 @@ export default function HomePage() {
                 className="bg-white text-center px-8 py-16 md:py-20"
                 style={{ borderRadius: '28px' }}
             >
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-5 tracking-tight">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-snug md:leading-tight mb-5 tracking-tight break-keep">
                     운영 효율과 안정성 사이의<br />
-                    <span className="text-gray-400">최적점을 찾는 백엔드 개발자.</span>
+                    <span className="text-gray-400">최적점을 찾는 소프트웨어 엔지니어.</span>
                 </h1>
 
-                <p className="text-gray-500 text-base mb-3 leading-relaxed max-w-xl mx-auto">
-                    실사용 환경의 문제를 기술적으로 정의하고 해결하는 4년차 백엔드 개발자입니다.
+                <p className="text-gray-500 text-base mb-3 leading-relaxed max-w-xl mx-auto break-keep">
+                    실사용 환경의 문제를 정의하고 기술적으로 해결하는 <br className="block sm:hidden" />소프트웨어 엔지니어입니다.
                 </p>
                 {/* <p className="text-gray-400 text-sm mb-2 leading-relaxed max-w-lg mx-auto break-keep">
                     초당 50건의 센서 데이터 유입으로 인한 HikariCP 커넥션 풀 고갈 문제를
@@ -86,33 +67,7 @@ export default function HomePage() {
 
             {/* 3. Tech Stack Grid */}
             <section>
-                <div className="px-2 py-3 mb-2">
-                    <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">기술 스택</h2>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {techCategories.map(({ label, techs }) => (
-                        <div
-                            key={label}
-                            className="bg-white p-5"
-                            style={{ borderRadius: '22px' }}
-                        >
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                                {label}
-                            </p>
-                            <div className="flex flex-col gap-1.5">
-                                {techs.map(tech => (
-                                    <span
-                                        key={tech}
-                                        className="text-sm text-gray-700 font-medium"
-                                    >
-                                        {tech}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                <TechStack />
             </section>
         </div>
     );
